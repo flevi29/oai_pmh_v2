@@ -14,8 +14,7 @@ type ListOptions = {
 };
 
 type RequestOptions = {
-  abortSignal?: AbortSignal;
-  retry?: number;
+  signal?: AbortSignal;
 };
 
 type BaseOptions = {
@@ -24,7 +23,7 @@ type BaseOptions = {
 };
 type OaiPmhOptionsConstructor = {
   baseUrl: string;
-  userAgent: string;
+  userAgent?: string;
   xmlParser: OaiPmhParserInterface;
 };
 

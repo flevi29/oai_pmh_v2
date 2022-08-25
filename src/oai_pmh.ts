@@ -19,7 +19,7 @@ export class OaiPmh {
     new URL(options.baseUrl);
     this.#requestOptions = {
       baseUrl: options.baseUrl,
-      userAgent: { "User-Agent": options.userAgent || "Node.js OAI-PMH" },
+      userAgent: { "User-Agent": options.userAgent || "oai_pmh_v2" },
     };
   }
 
@@ -42,23 +42,12 @@ export class OaiPmh {
   ): Promise<string> {
     const searchURL = new URL(this.#requestOptions.baseUrl);
     if (searchParams) searchURL.search = searchParams.toString();
-    try {
-      const response = await fetch(searchURL, {
-        method: "GET",
-        signal: options?.abortSignal,
-        headers: this.#requestOptions.userAgent,
-      });
-      return OaiPmh.#getTextFromResponse(response);
-    } catch (e: unknown) {
-      if (
-        !(e instanceof Error && e.name === "AbortError") && options?.retry &&
-        options.retry > 0
-      ) {
-        options.retry -= 1;
-        return await this.#request(searchParams, options);
-      }
-      throw e;
-    }
+    const response = await fetch(searchURL, {
+      method: "GET",
+      signal: options?.signal,
+      headers: this.#requestOptions.userAgent,
+    });
+    return OaiPmh.#getTextFromResponse(response);
   }
 
   async getRecord(
