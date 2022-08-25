@@ -1,4 +1,4 @@
-import { build, emptyDir } from "https://deno.land/x/dnt@0.30.0/mod.ts";
+import { build, emptyDir } from "../dev_deps.ts";
 
 await emptyDir("./npm");
 
@@ -14,7 +14,7 @@ await build({
   package: {
     // package.json properties
     name: "oai_pmh_v2",
-    version: "0.1.0",
+    version: "0.2.0",
     description: "",
     author: "",
     license: "MIT",
@@ -28,6 +28,13 @@ await build({
     homepage: "https://github.com/flevi29/oai_pmh_v2#readme",
     devDependencies: {
       "@types/node": "^18.7.13",
+    },
+  },
+  mappings: {
+    "https://cdn.skypack.dev/fast-xml-parser@4.0.9?dts": {
+      name: "fast-xml-parser",
+      version: "4.0.9",
+      peerDependency: false,
     },
   },
   compilerOptions: {

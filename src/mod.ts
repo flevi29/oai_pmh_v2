@@ -7,3 +7,6 @@ export type {
   RequestOptions,
   VerbsAndFieldsForList,
 } from "./model/general.ts";
+
+export { OaiPmhParser } from "./default_parser.ts";
+export type { X2jOptionsOptional } from "../deps.ts";
