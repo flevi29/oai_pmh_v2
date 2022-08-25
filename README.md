@@ -26,4 +26,4 @@ import { OaiPmh, OaiPmhParser } from "https://deno.land/x/oai_pmh_v2/src/mod.ts"
 })().catch(console.error);
 ```
 
-Find examples for all methods in examples directory. Some things are only documented via types for.
+Find examples for all methods in examples directory. Some things are only documented via types.

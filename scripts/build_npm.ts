@@ -14,7 +14,7 @@ await build({
   package: {
     // package.json properties
     name: "oai_pmh_v2",
-    version: "0.2.0",
+    version: "0.2.1",
     description: "",
     author: "",
     license: "MIT",
