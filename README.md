@@ -7,14 +7,13 @@ Example:
 
 ```typescript
 // Node.js
-import { OaiPmh, OaiPmhParser } from "oai_pmh_v2";
+import { OaiPmh } from "oai_pmh_v2";
 // Deno
-import { OaiPmh, OaiPmhParser } from "https://deno.land/x/oai_pmh_v2/src/mod.ts";
+import { OaiPmh } from "https://deno.land/x/oai_pmh_v2/src/mod.ts";
 
 (async () => {
   const oaiPmh = new OaiPmh({
     baseUrl: "https://www.hindawi.com/oai-pmh/oai.aspx",
-    xmlParser: new OaiPmhParser(),
   });
   for await (
     const gen of oaiPmh.listSets({ signal: AbortSignal.timeout(60000) })
