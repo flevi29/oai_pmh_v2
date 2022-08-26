@@ -1,14 +1,10 @@
 export class OaiPmhError extends Error {
-  readonly response;
+  readonly httpStatus?: number;
 
-  constructor(responseOrMsg: Response | string) {
-    super(
-      typeof responseOrMsg === "string"
-        ? responseOrMsg
-        : `HTTP Error Response: ${responseOrMsg.status} ${responseOrMsg.statusText}`,
-    );
-    this.response = typeof responseOrMsg === "string" ? null : responseOrMsg;
-    this.name = this.constructor.name;
-    Error.captureStackTrace(this, this.constructor);
+  constructor(message?: string, httpStatus?: number) {
+    super(message);
+    this.httpStatus = httpStatus;
+    this.name = new.target.name;
+    Object.setPrototypeOf(this, new.target.prototype);
   }
 }

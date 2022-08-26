@@ -23,7 +23,7 @@ export class OaiPmh {
     };
   }
 
-  static #cleanOptionsOfUndefined(options: ListOptions) {
+  #cleanOptionsOfUndefined(options: ListOptions) {
     for (const key of Object.keys(options)) {
       const forcedKey = <keyof ListOptions> key;
       if (options[forcedKey] === undefined) delete options[forcedKey];
@@ -31,9 +31,14 @@ export class OaiPmh {
     return options;
   }
 
-  static #getTextFromResponse(response: Response) {
-    if (response.ok) return response.text();
-    throw new OaiPmhError(response);
+  async #checkResponse(response: Response) {
+    if (response.ok) return;
+    const { status, statusText } = response;
+    const errorMsg = await response.text();
+    const msg = `HTTP Error response: ${status} ${statusText}${
+      errorMsg.trim() ? ` | ${errorMsg}` : ""
+    }`;
+    throw new OaiPmhError(msg, status);
   }
 
   async #request(
@@ -42,12 +47,30 @@ export class OaiPmh {
   ): Promise<string> {
     const searchURL = new URL(this.#requestOptions.baseUrl);
     if (searchParams) searchURL.search = searchParams.toString();
-    const response = await fetch(searchURL, {
-      method: "GET",
-      signal: options?.signal,
-      headers: this.#requestOptions.userAgent,
-    });
-    return OaiPmh.#getTextFromResponse(response);
+    try {
+      const response = await fetch(searchURL, {
+        method: "GET",
+        signal: options?.signal,
+        headers: this.#requestOptions.userAgent,
+      });
+      await this.#checkResponse(response);
+      return response.text();
+    } catch (err: unknown) {
+      if (
+        err instanceof OaiPmhError &&
+        err.httpStatus !== undefined &&
+        err.httpStatus >= 500 && options?.retry !== undefined
+      ) {
+        const { retry } = options;
+        if (retry > 0) {
+          return this.#request(searchParams, {
+            ...options,
+            retry: retry - 1,
+          });
+        }
+      }
+      throw err;
+    }
   }
 
   async getRecord(
@@ -124,7 +147,7 @@ export class OaiPmh {
     return this.#list(
       "ListIdentifiers",
       "header",
-      OaiPmh.#cleanOptionsOfUndefined(options),
+      this.#cleanOptionsOfUndefined(options),
       requestOptions,
     );
   }
@@ -133,7 +156,7 @@ export class OaiPmh {
     return this.#list(
       "ListRecords",
       "record",
-      OaiPmh.#cleanOptionsOfUndefined(options),
+      this.#cleanOptionsOfUndefined(options),
       requestOptions,
     );
   }

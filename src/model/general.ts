@@ -15,6 +15,7 @@ type ListOptions = {
 
 type RequestOptions = {
   signal?: AbortSignal;
+  retry?: number;
 };
 
 type BaseOptions = {
