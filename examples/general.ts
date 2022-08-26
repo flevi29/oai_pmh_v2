@@ -1,4 +1,4 @@
-import { OaiPmh, OaiPmhParser } from "../src/mod.ts";
+import { OaiPmh } from "../src/mod.ts";
 
 function handleAbort(error: unknown) {
   if (!(error instanceof DOMException)) throw error;
@@ -8,7 +8,6 @@ function handleAbort(error: unknown) {
 (async () => {
   const oaiPmh = new OaiPmh({
     baseUrl: "https://www.hindawi.com/oai-pmh/oai.aspx",
-    xmlParser: new OaiPmhParser(),
   });
 
   console.log("List Records:");
