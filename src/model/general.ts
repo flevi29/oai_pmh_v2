@@ -1,3 +1,4 @@
+import { X2jOptionsOptional } from "../../deps.ts";
 import type { OaiPmhParserInterface } from "./oai_pmh_parser.interface.ts";
 
 type VerbsAndFieldsForList = {
@@ -19,14 +20,17 @@ type RequestOptions = {
 };
 
 type BaseOptions = {
-  baseUrl: string;
+  baseUrl: URL;
   userAgent: { "User-Agent": string };
 };
-type OaiPmhOptionsConstructor = {
-  baseUrl: string;
-  userAgent?: string;
-  xmlParser: OaiPmhParserInterface;
-};
+type OaiPmhOptionsConstructor =
+  & {
+    baseUrl: string;
+    userAgent?: string;
+  }
+  & ({ xmlParser: OaiPmhParserInterface } | {
+    defaultParserConfig?: X2jOptionsOptional;
+  });
 
 export type {
   BaseOptions,

@@ -1,3 +1,4 @@
+import { OaiPmhParser } from "./default_parser.ts";
 import type {
   BaseOptions,
   ListOptions,
@@ -5,20 +6,22 @@ import type {
   RequestOptions,
   VerbsAndFieldsForList,
 } from "./model/general.ts";
+import { OaiPmhParserInterface } from "./model/oai_pmh_parser.interface.ts";
 import { OaiPmhError } from "./oai_pmh_error.ts";
 
 export class OaiPmh {
-  readonly #oaiPmhXML;
+  readonly #xmlParser: OaiPmhParserInterface;
   readonly #requestOptions: BaseOptions;
   readonly #identifyVerbURLParams = new URLSearchParams({
     verb: "Identify",
   });
 
   constructor(options: OaiPmhOptionsConstructor) {
-    this.#oaiPmhXML = options.xmlParser;
-    new URL(options.baseUrl);
+    this.#xmlParser = "xmlParser" in options
+      ? options.xmlParser
+      : new OaiPmhParser(options.defaultParserConfig);
     this.#requestOptions = {
-      baseUrl: options.baseUrl,
+      baseUrl: new URL(options.baseUrl),
       userAgent: { "User-Agent": options.userAgent || "oai_pmh_v2" },
     };
   }
@@ -86,8 +89,8 @@ export class OaiPmh {
       }),
       requestOptions,
     );
-    return await this.#oaiPmhXML.parseRecord(
-      this.#oaiPmhXML.parseOaiPmhXml(xml),
+    return await this.#xmlParser.parseRecord(
+      this.#xmlParser.parseOaiPmhXml(xml),
     );
   }
 
@@ -96,8 +99,8 @@ export class OaiPmh {
       this.#identifyVerbURLParams,
       requestOptions,
     );
-    return await this.#oaiPmhXML.parseIdentify(
-      this.#oaiPmhXML.parseOaiPmhXml(xml),
+    return await this.#xmlParser.parseIdentify(
+      this.#xmlParser.parseOaiPmhXml(xml),
     );
   }
 
@@ -110,8 +113,8 @@ export class OaiPmh {
     });
     if (identifier) searchParams.set("identifier", identifier);
     const xml = await this.#request(searchParams, requestOptions);
-    return await this.#oaiPmhXML.parseMetadataFormats(
-      this.#oaiPmhXML.parseOaiPmhXml(xml),
+    return await this.#xmlParser.parseMetadataFormats(
+      this.#xmlParser.parseOaiPmhXml(xml),
     );
   }
 
@@ -128,18 +131,18 @@ export class OaiPmh {
       }),
       requestOptions,
     );
-    let parsedXml = this.#oaiPmhXML.parseOaiPmhXml(xml);
-    yield this.#oaiPmhXML.parseList(parsedXml, verb, field);
+    let parsedXml = this.#xmlParser.parseOaiPmhXml(xml);
+    yield this.#xmlParser.parseList(parsedXml, verb, field);
     let resumptionToken: string | null;
     while (
-      (resumptionToken = this.#oaiPmhXML.parseResumptionToken(parsedXml, verb))
+      (resumptionToken = this.#xmlParser.parseResumptionToken(parsedXml, verb))
     ) {
       const xml = await this.#request(
         new URLSearchParams({ verb, resumptionToken }),
         requestOptions,
       );
-      parsedXml = this.#oaiPmhXML.parseOaiPmhXml(xml);
-      yield this.#oaiPmhXML.parseList(parsedXml, verb, field);
+      parsedXml = this.#xmlParser.parseOaiPmhXml(xml);
+      yield this.#xmlParser.parseList(parsedXml, verb, field);
     }
   }
 
