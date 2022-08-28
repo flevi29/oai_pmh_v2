@@ -6,21 +6,14 @@ type ResumptionTokenObj = {
   };
 };
 
-type OaiObjWithToken = {
+type OaiObj = {
+  Identify?: Record<string, unknown>;
+  GetRecord?: Record<string, unknown>;
   ListIdentifiers?: ResumptionTokenObj & { header: unknown[] };
   ListMetadataFormats?: ResumptionTokenObj & { metadataFormat: unknown[] };
   ListRecords?: ResumptionTokenObj & { record: unknown[] };
   ListSets?: ResumptionTokenObj & { set: unknown[] };
 };
-
-type RequiredOaiObjWithToken = {
-  [k in keyof OaiObjWithToken]-?: NonUndefined<OaiObjWithToken[k]>;
-};
-
-type OaiObj = {
-  Identify?: Record<string, unknown>;
-  GetRecord?: Record<string, unknown>;
-} & OaiObjWithToken;
 
 type RequiredOaiObj = {
   [k in keyof OaiObj]-?: NonUndefined<OaiObj[k]>;
