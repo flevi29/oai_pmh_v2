@@ -6,20 +6,19 @@ function handleAbort(error: unknown) {
 }
 
 (async () => {
-  const oaiPmh = new OaiPmh({
+  const oaiPmh = OaiPmh.getNewWithDefaultParser({
     baseUrl: "https://www.hindawi.com/oai-pmh/oai.aspx",
   });
 
   console.log("List Records:");
   try {
     for await (
-      const gen of oaiPmh.listRecords(
-        { metadataPrefix: "marc21" },
-        { signal: AbortSignal.timeout(60000) },
-      )
+      const arr of oaiPmh.listRecords({
+        listOptions: { metadataPrefix: "marc21" },
+        requestOptions: { signal: AbortSignal.timeout(60000) },
+      })
     ) {
-      const { value, done } = gen.next();
-      if (!done) console.log(value);
+      console.log(arr);
       break;
     }
   } catch (e: unknown) {
@@ -29,10 +28,11 @@ function handleAbort(error: unknown) {
   console.log("\nList Sets:");
   try {
     for await (
-      const gen of oaiPmh.listSets({ signal: AbortSignal.timeout(60000) })
+      const arr of oaiPmh.listSets({
+        requestOptions: { signal: AbortSignal.timeout(60000) },
+      })
     ) {
-      const { value, done } = gen.next();
-      if (!done) console.log(value);
+      console.log(arr);
       break;
     }
   } catch (e: unknown) {
@@ -42,13 +42,12 @@ function handleAbort(error: unknown) {
   console.log("\nList Identifiers:");
   try {
     for await (
-      const gen of oaiPmh.listIdentifiers(
-        { metadataPrefix: "marc21" },
-        { signal: AbortSignal.timeout(60000) },
-      )
+      const arr of oaiPmh.listIdentifiers({
+        listOptions: { metadataPrefix: "marc21" },
+        requestOptions: { signal: AbortSignal.timeout(60000) },
+      })
     ) {
-      const { value, done } = gen.next();
-      if (!done) console.log(value);
+      console.log(arr);
       break;
     }
   } catch (e: unknown) {
@@ -56,7 +55,18 @@ function handleAbort(error: unknown) {
   }
 
   console.log("\nList Metadata Formats:");
-  console.log(await oaiPmh.listMetadataFormats());
+  try {
+    for await (
+      const arr of oaiPmh.listMetadataFormats({
+        requestOptions: { signal: AbortSignal.timeout(60000) },
+      })
+    ) {
+      console.log(arr);
+      break;
+    }
+  } catch (e: unknown) {
+    handleAbort(e);
+  }
 
   console.log("\nIdentify:");
   console.log(await oaiPmh.identify());

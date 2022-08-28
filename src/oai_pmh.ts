@@ -1,37 +1,33 @@
-import { OaiPmhParser } from "./default_parser.ts";
+import { X2jOptionsOptional } from "../deps.ts";
+import { OaiPmhParser } from "./oai_pmh_parser/default_oai_pmh_parser.ts";
 import type {
   BaseOptions,
   ListOptions,
   OaiPmhOptionsConstructor,
   RequestOptions,
-  VerbsAndFieldsForList,
-} from "./model/general.ts";
-import { OaiPmhParserInterface } from "./model/oai_pmh_parser.interface.ts";
-import { OaiPmhError } from "./oai_pmh_error.ts";
+} from "./oai_pmh.model.ts";
+import { OaiPmhParserInterface } from "./oai_pmh_parser/oai_pmh_parser.interface.ts";
+import { OaiPmhError } from "./errors/oai_pmh_error.ts";
+import { recordToUrlSearchParams } from "./util/record_to_url_search_params.ts";
 
-export class OaiPmh {
-  readonly #xmlParser: OaiPmhParserInterface;
+export class OaiPmh<Parser extends OaiPmhParserInterface> {
+  readonly #xmlParser: Parser;
   readonly #requestOptions: BaseOptions;
-  readonly #identifyVerbURLParams = new URLSearchParams({
-    verb: "Identify",
-  });
 
-  constructor(options: OaiPmhOptionsConstructor) {
-    this.#xmlParser = "xmlParser" in options
-      ? options.xmlParser
-      : new OaiPmhParser(options.defaultParserConfig);
+  constructor(xmlParser: Parser, options: OaiPmhOptionsConstructor) {
+    this.#xmlParser = xmlParser;
     this.#requestOptions = {
       baseUrl: new URL(options.baseUrl),
       userAgent: { "User-Agent": options.userAgent || "oai_pmh_v2" },
     };
   }
 
-  #cleanOptionsOfUndefined(options: ListOptions) {
-    for (const key of Object.keys(options)) {
-      const forcedKey = <keyof ListOptions> key;
-      if (options[forcedKey] === undefined) delete options[forcedKey];
-    }
-    return options;
+  static getNewWithDefaultParser(
+    options: OaiPmhOptionsConstructor,
+    defaultParserConfig?: X2jOptionsOptional,
+  ) {
+    const xmlParser = new OaiPmhParser(defaultParserConfig);
+    return new OaiPmh(xmlParser, options);
   }
 
   async #checkResponse(response: Response) {
@@ -45,13 +41,13 @@ export class OaiPmh {
   }
 
   async #request(
-    searchParams?: URLSearchParams,
+    searchParams: URLSearchParams,
     options?: RequestOptions,
   ): Promise<string> {
-    const searchURL = new URL(this.#requestOptions.baseUrl);
-    if (searchParams) searchURL.search = searchParams.toString();
+    const url = new URL(this.#requestOptions.baseUrl);
+    url.search = searchParams.toString();
     try {
-      const response = await fetch(searchURL, {
+      const response = await fetch(url, {
         method: "GET",
         signal: options?.signal,
         headers: this.#requestOptions.userAgent,
@@ -76,11 +72,27 @@ export class OaiPmh {
     }
   }
 
+  readonly #identifyVerbURLParams = new URLSearchParams({
+    verb: "Identify",
+  });
+
+  async identify(
+    requestOptions?: RequestOptions,
+  ): Promise<ReturnType<Parser["parseIdentify"]>> {
+    const xml = await this.#request(
+      this.#identifyVerbURLParams,
+      requestOptions,
+    );
+    return <ReturnType<Parser["parseIdentify"]>> this.#xmlParser.parseIdentify(
+      xml,
+    );
+  }
+
   async getRecord(
     identifier: string,
     metadataPrefix: string,
     requestOptions?: RequestOptions,
-  ) {
+  ): Promise<ReturnType<Parser["parseGetRecord"]>> {
     const xml = await this.#request(
       new URLSearchParams({
         verb: "GetRecord",
@@ -89,82 +101,110 @@ export class OaiPmh {
       }),
       requestOptions,
     );
-    return await this.#xmlParser.parseRecord(
-      this.#xmlParser.parseOaiPmhXml(xml),
-    );
+    return <ReturnType<Parser["parseGetRecord"]>> this.#xmlParser
+      .parseGetRecord(
+        xml,
+      );
   }
 
-  async identify(requestOptions?: RequestOptions) {
-    const xml = await this.#request(
-      this.#identifyVerbURLParams,
-      requestOptions,
-    );
-    return await this.#xmlParser.parseIdentify(
-      this.#xmlParser.parseOaiPmhXml(xml),
-    );
-  }
-
-  async listMetadataFormats(
-    identifier?: string,
-    requestOptions?: RequestOptions,
+  async *#list(
+    cbParseList:
+      | Parser["parseListIdentifiers"]
+      | Parser["parseListMetadataFormats"]
+      | Parser["parseListRecords"]
+      | Parser["parseListSets"],
+    verb:
+      | "ListIdentifiers"
+      | "ListMetadataFormats"
+      | "ListRecords"
+      | "ListSets",
+    options: {
+      listOptions?: ListOptions;
+      requestOptions?: RequestOptions;
+    },
   ) {
-    const searchParams = new URLSearchParams({
-      verb: "ListMetadataFormats",
+    const { listOptions, requestOptions } = options;
+    const initialParams = recordToUrlSearchParams({
+      ...listOptions,
+      verb,
     });
-    if (identifier) searchParams.set("identifier", identifier);
-    const xml = await this.#request(searchParams, requestOptions);
-    return await this.#xmlParser.parseMetadataFormats(
-      this.#xmlParser.parseOaiPmhXml(xml),
+    const xml = await this.#request(initialParams, requestOptions);
+    let next = cbParseList.call(
+      this.#xmlParser,
+      xml,
     );
-  }
-
-  async *#list<T extends keyof VerbsAndFieldsForList>(
-    verb: T,
-    field: VerbsAndFieldsForList[T],
-    options?: ListOptions,
-    requestOptions?: RequestOptions,
-  ) {
-    const xml = await this.#request(
-      new URLSearchParams({
-        ...options,
-        verb,
-      }),
-      requestOptions,
-    );
-    let parsedXml = this.#xmlParser.parseOaiPmhXml(xml);
-    yield this.#xmlParser.parseList(parsedXml, verb, field);
-    let resumptionToken: string | null;
-    while (
-      (resumptionToken = this.#xmlParser.parseResumptionToken(parsedXml, verb))
-    ) {
+    yield next.records;
+    const params = new URLSearchParams({ verb });
+    while (next.resumptionToken !== null) {
+      params.set("resumptionToken", next.resumptionToken);
       const xml = await this.#request(
-        new URLSearchParams({ verb, resumptionToken }),
+        params,
         requestOptions,
       );
-      parsedXml = this.#xmlParser.parseOaiPmhXml(xml);
-      yield this.#xmlParser.parseList(parsedXml, verb, field);
+      next = cbParseList.call(
+        this.#xmlParser,
+        xml,
+      );
+      yield next.records;
     }
   }
 
-  listIdentifiers(options: ListOptions, requestOptions?: RequestOptions) {
-    return this.#list(
+  listIdentifiers(
+    options: { listOptions: ListOptions; requestOptions?: RequestOptions },
+  ) {
+    const { listOptions, requestOptions } = options;
+    return <AsyncGenerator<
+      ReturnType<Parser["parseListIdentifiers"]>["records"],
+      void
+    >> this.#list(
+      this.#xmlParser.parseListIdentifiers,
       "ListIdentifiers",
-      "header",
-      this.#cleanOptionsOfUndefined(options),
-      requestOptions,
+      { listOptions, requestOptions },
     );
   }
 
-  listRecords(options: ListOptions, requestOptions?: RequestOptions) {
-    return this.#list(
+  listMetadataFormats(options?: {
+    identifier?: string;
+    requestOptions?: RequestOptions;
+  }) {
+    return <AsyncGenerator<
+      ReturnType<Parser["parseListMetadataFormats"]>["records"],
+      void
+    >> this.#list(
+      this.#xmlParser.parseListMetadataFormats,
+      "ListMetadataFormats",
+      {
+        listOptions: { identifier: options?.identifier },
+        requestOptions: options?.requestOptions,
+      },
+    );
+  }
+
+  listRecords(
+    options: { listOptions: ListOptions; requestOptions?: RequestOptions },
+  ) {
+    return <AsyncGenerator<
+      ReturnType<Parser["parseListRecords"]>["records"],
+      void
+    >> this.#list(
+      this.#xmlParser.parseListRecords,
       "ListRecords",
-      "record",
-      this.#cleanOptionsOfUndefined(options),
-      requestOptions,
+      options,
     );
   }
 
-  listSets(requestOptions?: RequestOptions) {
-    return this.#list("ListSets", "set", undefined, requestOptions);
+  listSets(
+    options?: { requestOptions?: RequestOptions },
+  ) {
+    return <AsyncGenerator<
+      ReturnType<Parser["parseListSets"]>["records"],
+      void
+    >> this.#list(
+      this.#xmlParser.parseListSets,
+      "ListSets",
+      {
+        requestOptions: options?.requestOptions,
+      },
+    );
   }
 }

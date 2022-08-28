@@ -1,7 +1,9 @@
 # What is this?
 
-It's a library for Node.js and Deno to easily communicate through "The Open Archives Initiative Protocol for Metadata Harvesting" with certain OAI-PMH hosts.
-It is targeting [version 2 of OAI-PMH](https://www.openarchives.org/OAI/openarchivesprotocol.html).
+It's a library for Node.js and Deno to easily communicate through "The Open
+Archives Initiative Protocol for Metadata Harvesting" with certain OAI-PMH
+hosts. It is targeting
+[version 2 of OAI-PMH](https://www.openarchives.org/OAI/openarchivesprotocol.html).
 
 Example:
 
@@ -25,4 +27,5 @@ import { OaiPmh } from "https://deno.land/x/oai_pmh_v2/src/mod.ts";
 })().catch(console.error);
 ```
 
-Find examples for all methods in examples directory. Some things are only documented via types.
+Find examples for all methods in examples directory. Some things are only
+documented via types.

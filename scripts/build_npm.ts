@@ -34,7 +34,7 @@ await build({
     "https://cdn.skypack.dev/fast-xml-parser@4.0.9?dts": {
       name: "fast-xml-parser",
       version: "4.0.9",
-      peerDependency: false,
+      peerDependency: true,
     },
   },
   compilerOptions: {
