@@ -1,6 +1,6 @@
 # What is this?
 
-It's a library for Node.js and Deno to easily communicate through "The Open
+It's a module for Node.js and Deno to easily communicate through "The Open
 Archives Initiative Protocol for Metadata Harvesting" with certain OAI-PMH
 hosts. It is targeting
 [version 2 of OAI-PMH](https://www.openarchives.org/OAI/openarchivesprotocol.html).
@@ -14,16 +14,14 @@ import { OaiPmh } from "oai_pmh_v2";
 import { OaiPmh } from "https://deno.land/x/oai_pmh_v2/src/mod.ts";
 
 (async () => {
-  const oaiPmh = new OaiPmh({
-    baseUrl: "https://www.hindawi.com/oai-pmh/oai.aspx",
+  const oaiPmh = OaiPmh.getNewWithDefaultParser({
+    baseUrl:
+      "http://bibliotecavirtual.asturias.es/i18n/oai/oai_bibliotecavirtual.asturias.es.cmd",
   });
-  for await (
-    const gen of oaiPmh.listSets({ signal: AbortSignal.timeout(60000) })
-  ) {
-    for (const value of gen) {
-      console.log(value);
-    }
-  }
+
+  const info = await oaiPmh.identify({ signal: AbortSignal.timeout(60000) });
+
+  console.log(info);
 })().catch(console.error);
 ```
 

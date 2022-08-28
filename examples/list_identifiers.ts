@@ -1,14 +1,10 @@
-import { OaiPmh } from "../src/mod.ts";
-
-const oaiPmh = OaiPmh.getNewWithDefaultParser({
-  baseUrl: "https://www.hindawi.com/oai-pmh/oai.aspx",
-});
+import { oaiPmh } from "./shared.ts";
 
 try {
   for await (
     const arr of oaiPmh.listIdentifiers({
       listOptions: { metadataPrefix: "marc21" },
-      requestOptions: { signal: AbortSignal.timeout(17000) },
+      requestOptions: { signal: AbortSignal.timeout(170000) },
     })
   ) {
     console.log(arr);

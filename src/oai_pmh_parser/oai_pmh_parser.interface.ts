@@ -9,11 +9,9 @@ interface OaiPmhParserInterface<
   ParsedListIdentifiers extends TokenAndRecords<unknown> = TokenAndRecords<
     unknown
   >,
-  ParsedListMetadataFormats extends TokenAndRecords<unknown> = TokenAndRecords<
-    unknown
-  >,
+  ParsedListMetadataFormats = unknown,
   ParsedListRecords extends TokenAndRecords<unknown> = TokenAndRecords<unknown>,
-  ParsedListSets extends TokenAndRecords<unknown> = TokenAndRecords<unknown>,
+  ParsedListSets = unknown,
 > {
   parseIdentify(xml: string): ParsedIdentify;
 

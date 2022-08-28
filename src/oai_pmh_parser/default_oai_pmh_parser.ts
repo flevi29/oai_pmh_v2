@@ -16,9 +16,9 @@ export class OaiPmhParser implements
     RequiredOaiObj["Identify"],
     RequiredOaiObj["GetRecord"],
     TokenAndRecords<RequiredOaiObj["ListIdentifiers"]["header"]>,
-    TokenAndRecords<RequiredOaiObj["ListMetadataFormats"]["metadataFormat"]>,
+    RequiredOaiObj["ListMetadataFormats"]["metadataFormat"],
     TokenAndRecords<RequiredOaiObj["ListRecords"]["record"]>,
-    TokenAndRecords<RequiredOaiObj["ListSets"]["set"]>
+    RequiredOaiObj["ListSets"]["set"]
   > {
   readonly #xmlParser;
 
@@ -34,11 +34,17 @@ export class OaiPmhParser implements
     this.#xmlParser = new XMLParser(parserOptions);
   }
 
+  #getNonComformantErrorMessage(object: Record<string, unknown>) {
+    return `Returned data does not conform to OAI-PMH\nProblematic object: ${
+      JSON.stringify(object)
+    }`;
+  }
+
   #parseOaiPmhXml(xml: string): OaiObj {
     const obj: OaiResponse = this.#xmlParser.parse(xml);
     const oaiResponse = obj["OAI-PMH"];
     if (typeof oaiResponse !== "object") {
-      throw new OaiPmhError("Returned data does not conform to OAI-PMH");
+      throw new OaiPmhError(this.#getNonComformantErrorMessage(oaiResponse));
     }
     if ("error" in oaiResponse) {
       const { error: { "#text": text, "@_code": code } } = oaiResponse;
@@ -47,12 +53,6 @@ export class OaiPmhParser implements
       );
     }
     return oaiResponse;
-  }
-
-  #getNonComformantErrorMessage(object: Record<string, unknown>) {
-    return `Returned data does not conform to OAI-PMH\nProblematic object: ${
-      JSON.stringify(object)
-    }`;
   }
 
   #getPropertyOrThrowOnUndefined<T extends OaiObj[keyof OaiObj]>(
@@ -79,9 +79,7 @@ export class OaiPmhParser implements
   #parseResumptionToken(
     parsedVerb:
       | RequiredOaiObj["ListIdentifiers"]
-      | RequiredOaiObj["ListMetadataFormats"]
-      | RequiredOaiObj["ListRecords"]
-      | RequiredOaiObj["ListSets"],
+      | RequiredOaiObj["ListRecords"],
   ): string | null {
     const { resumptionToken: rt } = parsedVerb;
     return typeof rt === "object"
@@ -107,16 +105,13 @@ export class OaiPmhParser implements
 
   parseListMetadataFormats(
     xml: string,
-  ): TokenAndRecords<RequiredOaiObj["ListMetadataFormats"]["metadataFormat"]> {
+  ): RequiredOaiObj["ListMetadataFormats"]["metadataFormat"] {
     const parsedXml = this.#parseOaiPmhXml(xml);
     const parsedVerb = this.#getPropertyOrThrowOnUndefined(
       parsedXml.ListMetadataFormats,
       parsedXml,
     );
-    return {
-      records: parsedVerb.metadataFormat,
-      resumptionToken: this.#parseResumptionToken(parsedVerb),
-    };
+    return parsedVerb.metadataFormat;
   }
 
   parseListRecords(
@@ -135,15 +130,12 @@ export class OaiPmhParser implements
 
   parseListSets(
     xml: string,
-  ): TokenAndRecords<RequiredOaiObj["ListSets"]["set"]> {
+  ): RequiredOaiObj["ListSets"]["set"] {
     const parsedXml = this.#parseOaiPmhXml(xml);
     const parsedVerb = this.#getPropertyOrThrowOnUndefined(
       parsedXml.ListSets,
       parsedXml,
     );
-    return {
-      records: parsedVerb.set,
-      resumptionToken: this.#parseResumptionToken(parsedVerb),
-    };
+    return parsedVerb.set;
   }
 }

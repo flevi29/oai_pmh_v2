@@ -10,9 +10,9 @@ type OaiObj = {
   Identify?: Record<string, unknown>;
   GetRecord?: Record<string, unknown>;
   ListIdentifiers?: ResumptionTokenObj & { header: unknown[] };
-  ListMetadataFormats?: ResumptionTokenObj & { metadataFormat: unknown[] };
+  ListMetadataFormats?: { metadataFormat: unknown[] };
   ListRecords?: ResumptionTokenObj & { record: unknown[] };
-  ListSets?: ResumptionTokenObj & { set: unknown[] };
+  ListSets?: { set: unknown[] };
 };
 
 type RequiredOaiObj = {

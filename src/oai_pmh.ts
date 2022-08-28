@@ -106,14 +106,10 @@ export class OaiPmh<Parser extends OaiPmhParserInterface> {
   async *#list(
     cbParseList:
       | Parser["parseListIdentifiers"]
-      | Parser["parseListMetadataFormats"]
-      | Parser["parseListRecords"]
-      | Parser["parseListSets"],
+      | Parser["parseListRecords"],
     verb:
       | "ListIdentifiers"
-      | "ListMetadataFormats"
-      | "ListRecords"
-      | "ListSets",
+      | "ListRecords",
     options: {
       listOptions?: ListOptions;
       requestOptions?: RequestOptions;
@@ -156,21 +152,18 @@ export class OaiPmh<Parser extends OaiPmhParserInterface> {
     );
   }
 
-  listMetadataFormats(options?: {
+  async listMetadataFormats(options?: {
     identifier?: string;
     requestOptions?: RequestOptions;
   }) {
-    return <AsyncGenerator<
-      ReturnType<Parser["parseListMetadataFormats"]>["records"],
-      void
-    >> this.#list(
-      this.#xmlParser.parseListMetadataFormats,
-      "ListMetadataFormats",
-      {
-        listOptions: { identifier: options?.identifier },
-        requestOptions: options?.requestOptions,
-      },
+    const xml = await this.#request(
+      { verb: "ListMetadataFormats", identifier: options?.identifier },
+      options?.requestOptions,
     );
+    return <ReturnType<Parser["parseListMetadataFormats"]>> this.#xmlParser
+      .parseListMetadataFormats(
+        xml,
+      );
   }
 
   listRecords(
@@ -186,18 +179,16 @@ export class OaiPmh<Parser extends OaiPmhParserInterface> {
     );
   }
 
-  listSets(
+  async listSets(
     options?: { requestOptions?: RequestOptions },
   ) {
-    return <AsyncGenerator<
-      ReturnType<Parser["parseListSets"]>["records"],
-      void
-    >> this.#list(
-      this.#xmlParser.parseListSets,
-      "ListSets",
-      {
-        requestOptions: options?.requestOptions,
-      },
+    const xml = await this.#request(
+      { verb: "ListSets" },
+      options?.requestOptions,
     );
+    return <ReturnType<Parser["parseListSets"]>> this.#xmlParser
+      .parseListSets(
+        xml,
+      );
   }
 }

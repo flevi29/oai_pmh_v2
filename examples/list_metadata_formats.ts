@@ -1,17 +1,7 @@
-import { OaiPmh } from "../src/mod.ts";
-
-const oaiPmh = OaiPmh.getNewWithDefaultParser({
-  baseUrl: "https://www.hindawi.com/oai-pmh/oai.aspx",
-});
+import { oaiPmh } from "./shared.ts";
 
 try {
-  for await (
-    const arr of oaiPmh.listMetadataFormats({
-      requestOptions: { signal: AbortSignal.timeout(17000) },
-    })
-  ) {
-    console.log(arr);
-  }
+  console.log(await oaiPmh.listMetadataFormats());
 } catch (e: unknown) {
   if (!(e instanceof DOMException)) throw e;
   console.warn("Aborted");
