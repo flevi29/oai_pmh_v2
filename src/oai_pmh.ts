@@ -8,14 +8,14 @@ import type {
 } from "./oai_pmh.model.ts";
 import { OaiPmhParserInterface } from "./oai_pmh_parser/oai_pmh_parser.interface.ts";
 import { OaiPmhError } from "./errors/oai_pmh_error.ts";
-import { recordToUrlSearchParams } from "./util/record_to_url_search_params.ts";
+import { applyRecordToURLSearchParams } from "./util/apply_record_to_url_search_params.ts";
 
 export class OaiPmh<Parser extends OaiPmhParserInterface> {
   readonly #xmlParser: Parser;
   readonly #requestOptions: BaseOptions;
 
-  constructor(xmlParser: Parser, options: OaiPmhOptionsConstructor) {
-    this.#xmlParser = xmlParser;
+  constructor(parser: Parser, options: OaiPmhOptionsConstructor) {
+    this.#xmlParser = parser;
     this.#requestOptions = {
       baseUrl: new URL(options.baseUrl),
       userAgent: { "User-Agent": options.userAgent || "oai_pmh_v2" },
@@ -26,8 +26,8 @@ export class OaiPmh<Parser extends OaiPmhParserInterface> {
     options: OaiPmhOptionsConstructor,
     defaultParserConfig?: X2jOptionsOptional,
   ) {
-    const xmlParser = new OaiPmhParser(defaultParserConfig);
-    return new OaiPmh(xmlParser, options);
+    const parser = new OaiPmhParser(defaultParserConfig);
+    return new OaiPmh(parser, options);
   }
 
   async #checkResponse(response: Response) {
@@ -41,11 +41,11 @@ export class OaiPmh<Parser extends OaiPmhParserInterface> {
   }
 
   async #request(
-    searchParams: URLSearchParams,
+    searchParams: Record<string, string | undefined>,
     options?: RequestOptions,
   ): Promise<string> {
     const url = new URL(this.#requestOptions.baseUrl);
-    url.search = searchParams.toString();
+    applyRecordToURLSearchParams(url.searchParams, searchParams);
     try {
       const response = await fetch(url, {
         method: "GET",
@@ -72,15 +72,11 @@ export class OaiPmh<Parser extends OaiPmhParserInterface> {
     }
   }
 
-  readonly #identifyVerbURLParams = new URLSearchParams({
-    verb: "Identify",
-  });
-
   async identify(
     requestOptions?: RequestOptions,
   ): Promise<ReturnType<Parser["parseIdentify"]>> {
     const xml = await this.#request(
-      this.#identifyVerbURLParams,
+      { verb: "Identify" },
       requestOptions,
     );
     return <ReturnType<Parser["parseIdentify"]>> this.#xmlParser.parseIdentify(
@@ -94,11 +90,11 @@ export class OaiPmh<Parser extends OaiPmhParserInterface> {
     requestOptions?: RequestOptions,
   ): Promise<ReturnType<Parser["parseGetRecord"]>> {
     const xml = await this.#request(
-      new URLSearchParams({
+      {
         verb: "GetRecord",
         identifier,
         metadataPrefix,
-      }),
+      },
       requestOptions,
     );
     return <ReturnType<Parser["parseGetRecord"]>> this.#xmlParser
@@ -124,19 +120,16 @@ export class OaiPmh<Parser extends OaiPmhParserInterface> {
     },
   ) {
     const { listOptions, requestOptions } = options;
-    const initialParams = recordToUrlSearchParams({
-      ...listOptions,
-      verb,
-    });
+    const initialParams = { ...listOptions, verb };
     const xml = await this.#request(initialParams, requestOptions);
     let next = cbParseList.call(
       this.#xmlParser,
       xml,
     );
     yield next.records;
-    const params = new URLSearchParams({ verb });
+
     while (next.resumptionToken !== null) {
-      params.set("resumptionToken", next.resumptionToken);
+      const params = { verb, resumptionToken: next.resumptionToken };
       const xml = await this.#request(
         params,
         requestOptions,
