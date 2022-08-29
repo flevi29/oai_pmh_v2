@@ -2,7 +2,7 @@
 
 # What is this?
 
-Blazingly fast module for Node.js and Deno to communicate through "The Open
+A blazingly fast module for Node.js and Deno to communicate through "The Open
 Archives Initiative Protocol for Metadata Harvesting" with OAI-PMH providers. It
 is targeting
 [version 2 of OAI-PMH](https://www.openarchives.org/OAI/openarchivesprotocol.html).

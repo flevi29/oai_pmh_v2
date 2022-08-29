@@ -103,6 +103,26 @@ export class OaiPmh<Parser extends OaiPmhParserInterface> {
       );
   }
 
+  // Fetch API doesn't clean up it's AbortSignal listener, and there's no way for us to do it (yet)
+  // So we need to create a new AbortController for each fetch request
+  #getRequestOptionsWithNewSignal(
+    requestOptions?: RequestOptions,
+    lastCb?: () => void,
+  ): { requestOptions?: RequestOptions; newCb: undefined | (() => void) } {
+    if (requestOptions?.signal === undefined) {
+      return { requestOptions, newCb: undefined };
+    }
+    const { signal } = requestOptions;
+    if (lastCb !== undefined) signal.removeEventListener("abort", lastCb);
+    const ac = new AbortController();
+    const newCb = () => ac.abort();
+    signal.addEventListener("abort", newCb);
+    return {
+      requestOptions: { ...requestOptions, signal: ac.signal },
+      newCb,
+    };
+  }
+
   async *#list(
     cbParseList:
       | Parser["parseListIdentifiers"]
@@ -111,13 +131,17 @@ export class OaiPmh<Parser extends OaiPmhParserInterface> {
       | "ListIdentifiers"
       | "ListRecords",
     options: {
-      listOptions?: ListOptions;
+      listOptions: ListOptions;
       requestOptions?: RequestOptions;
     },
   ) {
     const { listOptions, requestOptions } = options;
-    const initialParams = { ...listOptions, verb };
-    const xml = await this.#request(initialParams, requestOptions);
+    let requestOpAndCb = this
+      .#getRequestOptionsWithNewSignal(requestOptions);
+    const xml = await this.#request(
+      { ...listOptions, verb },
+      requestOpAndCb.requestOptions,
+    );
     let next = cbParseList.call(
       this.#xmlParser,
       xml,
@@ -125,10 +149,14 @@ export class OaiPmh<Parser extends OaiPmhParserInterface> {
     yield next.records;
 
     while (next.resumptionToken !== null) {
-      const params = { verb, resumptionToken: next.resumptionToken };
+      requestOpAndCb = this
+        .#getRequestOptionsWithNewSignal(
+          requestOptions,
+          requestOpAndCb.newCb,
+        );
       const xml = await this.#request(
-        params,
-        requestOptions,
+        { verb, resumptionToken: next.resumptionToken },
+        requestOpAndCb.requestOptions,
       );
       next = cbParseList.call(
         this.#xmlParser,
@@ -139,9 +167,9 @@ export class OaiPmh<Parser extends OaiPmhParserInterface> {
   }
 
   listIdentifiers(
-    options: { listOptions: ListOptions; requestOptions?: RequestOptions },
+    listOptions: ListOptions,
+    requestOptions?: RequestOptions,
   ) {
-    const { listOptions, requestOptions } = options;
     return <AsyncGenerator<
       ReturnType<Parser["parseListIdentifiers"]>["records"],
       void
@@ -152,13 +180,13 @@ export class OaiPmh<Parser extends OaiPmhParserInterface> {
     );
   }
 
-  async listMetadataFormats(options?: {
-    identifier?: string;
-    requestOptions?: RequestOptions;
-  }) {
+  async listMetadataFormats(
+    identifier?: string,
+    requestOptions?: RequestOptions,
+  ) {
     const xml = await this.#request(
-      { verb: "ListMetadataFormats", identifier: options?.identifier },
-      options?.requestOptions,
+      { verb: "ListMetadataFormats", identifier },
+      requestOptions,
     );
     return <ReturnType<Parser["parseListMetadataFormats"]>> this.#xmlParser
       .parseListMetadataFormats(
@@ -167,7 +195,8 @@ export class OaiPmh<Parser extends OaiPmhParserInterface> {
   }
 
   listRecords(
-    options: { listOptions: ListOptions; requestOptions?: RequestOptions },
+    listOptions: ListOptions,
+    requestOptions?: RequestOptions,
   ) {
     return <AsyncGenerator<
       ReturnType<Parser["parseListRecords"]>["records"],
@@ -175,16 +204,16 @@ export class OaiPmh<Parser extends OaiPmhParserInterface> {
     >> this.#list(
       this.#xmlParser.parseListRecords,
       "ListRecords",
-      options,
+      { listOptions, requestOptions },
     );
   }
 
   async listSets(
-    options?: { requestOptions?: RequestOptions },
+    requestOptions?: RequestOptions,
   ) {
     const xml = await this.#request(
       { verb: "ListSets" },
-      options?.requestOptions,
+      requestOptions,
     );
     return <ReturnType<Parser["parseListSets"]>> this.#xmlParser
       .parseListSets(

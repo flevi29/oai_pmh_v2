@@ -3,7 +3,7 @@ type ListOptions = {
   until?: string;
   set?: string;
   metadataPrefix: string;
-} | { identifier?: string };
+};
 
 type RequestOptions = {
   signal?: AbortSignal;

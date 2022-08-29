@@ -2,10 +2,10 @@ import { oaiPmh } from "./shared.ts";
 
 try {
   for await (
-    const arr of oaiPmh.listIdentifiers({
-      listOptions: { metadataPrefix: "marc21" },
-      requestOptions: { signal: AbortSignal.timeout(170000) },
-    })
+    const arr of oaiPmh.listIdentifiers(
+      { metadataPrefix: "marc21" },
+      { signal: AbortSignal.timeout(170000) },
+    )
   ) {
     console.log(arr);
   }
