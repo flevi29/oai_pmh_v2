@@ -14,7 +14,7 @@ await build({
   package: {
     // package.json properties
     name: "oai_pmh_v2",
-    version: "0.3.0",
+    version: "0.3.1",
     author: "Fodor Levente",
     license: "MIT",
     description: "Deno and Node.js API module for OAI-PMH.",
