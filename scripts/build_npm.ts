@@ -5,7 +5,7 @@ await emptyDir("./npm");
 await build({
   entryPoints: ["./src/mod.ts"],
   outDir: "./npm",
-  shims: {},
+  shims: { undici: true },
   typeCheck: true,
   test: false,
   declaration: true,
@@ -14,14 +14,12 @@ await build({
   package: {
     // package.json properties
     name: "oai_pmh_v2",
-    version: "0.3.1",
+    version: "0.4.0",
     author: "Fodor Levente",
     license: "MIT",
     description: "Deno and Node.js API module for OAI-PMH.",
     keywords: ["OAI-PMH", "oaipmh", "oai", "metadata", "harvest", "protocol"],
-    engines: {
-      node: ">=18",
-    },
+    engines: { node: ">=16.8" },
     repository: {
       type: "git",
       url: "git+https://github.com/flevi29/oai_pmh_v2.git",
@@ -31,13 +29,15 @@ await build({
     },
     homepage: "https://github.com/flevi29/oai_pmh_v2#readme",
     devDependencies: {
-      "@types/node": "^18.7.13",
+      "@types/node": "^18.11.9",
+      "fast-xml-parser": "^4.0.11",
     },
+    peerDependenciesMeta: { "fast-xml-parser": { optional: true } },
   },
   mappings: {
-    "https://cdn.skypack.dev/fast-xml-parser@^4.0.9?dts": {
+    "https://cdn.skypack.dev/fast-xml-parser@^4.0.11?dts": {
       name: "fast-xml-parser",
-      version: "^4.0.9",
+      version: "^4.0.11",
       peerDependency: true,
     },
   },
@@ -45,7 +45,7 @@ await build({
     target: "Latest",
     lib: ["dom"],
   },
-  packageManager: "npm",
+  packageManager: "pnpm",
 });
 
 // post build steps

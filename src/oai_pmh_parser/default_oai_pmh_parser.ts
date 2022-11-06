@@ -1,25 +1,19 @@
 import { X2jOptionsOptional, XMLParser } from "../../deps.ts";
-import {
+import { OaiPmhError } from "../errors/oai_pmh_error.ts";
+import type {
   OaiPmhParserInterface,
   TokenAndRecords,
 } from "./oai_pmh_parser.interface.ts";
-import {
-  NonUndefined,
+import type {
+  DefaultOAIReturnTypes,
   OaiObj,
   OaiResponse,
   RequiredOaiObj,
 } from "./default_oai_pmh_parser.model.ts";
-import { OaiPmhError } from "../errors/oai_pmh_error.ts";
 
-export class OaiPmhParser implements
-  OaiPmhParserInterface<
-    RequiredOaiObj["Identify"],
-    RequiredOaiObj["GetRecord"],
-    TokenAndRecords<RequiredOaiObj["ListIdentifiers"]["header"]>,
-    RequiredOaiObj["ListMetadataFormats"]["metadataFormat"],
-    TokenAndRecords<RequiredOaiObj["ListRecords"]["record"]>,
-    RequiredOaiObj["ListSets"]["set"]
-  > {
+export class OaiPmhParser<
+  TOAIReturnTypes extends DefaultOAIReturnTypes = DefaultOAIReturnTypes,
+> implements OaiPmhParserInterface<TOAIReturnTypes> {
   readonly #xmlParser;
 
   constructor(
@@ -55,23 +49,27 @@ export class OaiPmhParser implements
     return oaiResponse;
   }
 
-  #getPropertyOrThrowOnUndefined<T extends OaiObj[keyof OaiObj]>(
+  #getPropertyOrThrowOnUndefined<T>(
     property: T,
     parentObject: OaiObj,
-  ): NonUndefined<T> {
-    // for whatever reason this type guard does not work
-    if (property === undefined) {
-      throw new OaiPmhError(this.#getNonComformantErrorMessage(parentObject));
+  ): Exclude<T, undefined> {
+    // The type checker is doing backflips over this type guard
+    // Maybe there's a solution for doing it properly but it's just not worth it
+    if (property !== void 0) {
+      return <Exclude<T, undefined>> property;
     }
-    return <NonUndefined<T>> property;
+    throw new OaiPmhError(this.#getNonComformantErrorMessage(parentObject));
   }
 
-  parseIdentify(xml: string): RequiredOaiObj["Identify"] {
+  parseIdentify(xml: string): TOAIReturnTypes["Identify"] {
     const parsedXml = this.#parseOaiPmhXml(xml);
-    return this.#getPropertyOrThrowOnUndefined(parsedXml.Identify, parsedXml);
+    return <TOAIReturnTypes["Identify"]> this.#getPropertyOrThrowOnUndefined(
+      parsedXml.Identify,
+      parsedXml,
+    );
   }
 
-  parseGetRecord(xml: string): RequiredOaiObj["GetRecord"] {
+  parseGetRecord(xml: string): TOAIReturnTypes["GetRecord"] {
     const parsedXml = this.#parseOaiPmhXml(xml);
     return this.#getPropertyOrThrowOnUndefined(parsedXml.GetRecord, parsedXml);
   }
@@ -91,7 +89,7 @@ export class OaiPmhParser implements
 
   parseListIdentifiers(
     xml: string,
-  ): TokenAndRecords<RequiredOaiObj["ListIdentifiers"]["header"]> {
+  ): TokenAndRecords<TOAIReturnTypes["ListIdentifiers"]> {
     const parsedXml = this.#parseOaiPmhXml(xml);
     const parsedVerb = this.#getPropertyOrThrowOnUndefined(
       parsedXml.ListIdentifiers,
@@ -105,7 +103,7 @@ export class OaiPmhParser implements
 
   parseListMetadataFormats(
     xml: string,
-  ): RequiredOaiObj["ListMetadataFormats"]["metadataFormat"] {
+  ): TOAIReturnTypes["ListMetadataFormats"] {
     const parsedXml = this.#parseOaiPmhXml(xml);
     const parsedVerb = this.#getPropertyOrThrowOnUndefined(
       parsedXml.ListMetadataFormats,
@@ -116,7 +114,7 @@ export class OaiPmhParser implements
 
   parseListRecords(
     xml: string,
-  ): TokenAndRecords<RequiredOaiObj["ListRecords"]["record"]> {
+  ): TokenAndRecords<TOAIReturnTypes["ListRecords"]> {
     const parsedXml = this.#parseOaiPmhXml(xml);
     const parsedVerb = this.#getPropertyOrThrowOnUndefined(
       parsedXml.ListRecords,
@@ -130,7 +128,7 @@ export class OaiPmhParser implements
 
   parseListSets(
     xml: string,
-  ): RequiredOaiObj["ListSets"]["set"] {
+  ): TOAIReturnTypes["ListSets"] {
     const parsedXml = this.#parseOaiPmhXml(xml);
     const parsedVerb = this.#getPropertyOrThrowOnUndefined(
       parsedXml.ListSets,

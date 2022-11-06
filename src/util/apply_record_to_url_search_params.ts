@@ -3,7 +3,7 @@ export function applyRecordToURLSearchParams(
   record: Record<string, undefined | string>,
 ) {
   for (const [key, val] of Object.entries(record)) {
-    if (val === undefined) continue;
+    if (val === void 0) continue;
     searchParams.set(key, val);
   }
 }

@@ -1,29 +1,36 @@
+// deno-lint-ignore-file no-explicit-any
 type TokenAndRecords<T> = {
   resumptionToken: string | null;
   records: T;
 };
 
+type DefaultOAIReturnTypes = {
+  Identify: any;
+  GetRecord: any;
+  ListIdentifiers: any;
+  ListMetadataFormats: any;
+  ListRecords: any;
+  ListSets: any;
+};
+
 interface OaiPmhParserInterface<
-  ParsedIdentify = unknown,
-  ParsedGetRecord = unknown,
-  ParsedListIdentifiers extends TokenAndRecords<unknown> = TokenAndRecords<
-    unknown
-  >,
-  ParsedListMetadataFormats = unknown,
-  ParsedListRecords extends TokenAndRecords<unknown> = TokenAndRecords<unknown>,
-  ParsedListSets = unknown,
+  TOAIReturnTypes extends DefaultOAIReturnTypes = DefaultOAIReturnTypes,
 > {
-  parseIdentify(xml: string): ParsedIdentify;
+  parseIdentify(xml: string): TOAIReturnTypes["Identify"];
 
-  parseGetRecord(xml: string): ParsedGetRecord;
+  parseGetRecord(xml: string): TOAIReturnTypes["GetRecord"];
 
-  parseListIdentifiers(xml: string): ParsedListIdentifiers;
+  parseListIdentifiers(
+    xml: string,
+  ): TokenAndRecords<TOAIReturnTypes["ListIdentifiers"]>;
 
-  parseListMetadataFormats(xml: string): ParsedListMetadataFormats;
+  parseListMetadataFormats(xml: string): TOAIReturnTypes["ListMetadataFormats"];
 
-  parseListRecords(xml: string): ParsedListRecords;
+  parseListRecords(
+    xml: string,
+  ): TokenAndRecords<TOAIReturnTypes["ListRecords"]>;
 
-  parseListSets(xml: string): ParsedListSets;
+  parseListSets(xml: string): TOAIReturnTypes["ListSets"];
 }
 
 export type { OaiPmhParserInterface, TokenAndRecords };

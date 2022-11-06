@@ -1,14 +1,12 @@
-import { X2jOptionsOptional } from "../deps.ts";
-import { OaiPmhParser } from "./oai_pmh_parser/default_oai_pmh_parser.ts";
+import { OaiPmhError } from "./errors/oai_pmh_error.ts";
+import { applyRecordToURLSearchParams } from "./util/apply_record_to_url_search_params.ts";
 import type {
   BaseOptions,
   ListOptions,
   OaiPmhOptionsConstructor,
   RequestOptions,
 } from "./oai_pmh.model.ts";
-import { OaiPmhParserInterface } from "./oai_pmh_parser/oai_pmh_parser.interface.ts";
-import { OaiPmhError } from "./errors/oai_pmh_error.ts";
-import { applyRecordToURLSearchParams } from "./util/apply_record_to_url_search_params.ts";
+import type { OaiPmhParserInterface } from "./oai_pmh_parser/oai_pmh_parser.interface.ts";
 
 export class OaiPmh<Parser extends OaiPmhParserInterface> {
   readonly #xmlParser: Parser;
@@ -20,14 +18,6 @@ export class OaiPmh<Parser extends OaiPmhParserInterface> {
       baseUrl: new URL(options.baseUrl),
       userAgent: { "User-Agent": options.userAgent || "oai_pmh_v2" },
     };
-  }
-
-  static getNewWithDefaultParser(
-    options: OaiPmhOptionsConstructor,
-    defaultParserConfig?: X2jOptionsOptional,
-  ) {
-    const parser = new OaiPmhParser(defaultParserConfig);
-    return new OaiPmh(parser, options);
   }
 
   async #checkResponse(response: Response) {
@@ -57,8 +47,8 @@ export class OaiPmh<Parser extends OaiPmhParserInterface> {
     } catch (err: unknown) {
       if (
         err instanceof OaiPmhError &&
-        err.httpStatus !== undefined &&
-        err.httpStatus >= 500 && options?.retry !== undefined
+        err.httpStatus !== void 0 &&
+        err.httpStatus >= 500 && options?.retry !== void 0
       ) {
         const { retry } = options;
         if (retry > 0) {
@@ -103,26 +93,6 @@ export class OaiPmh<Parser extends OaiPmhParserInterface> {
       );
   }
 
-  // Fetch API doesn't clean up it's AbortSignal listener, and there's no way for us to do it (yet)
-  // So we need to create a new AbortController for each fetch request
-  #getRequestOptionsWithNewSignal(
-    requestOptions?: RequestOptions,
-    lastCb?: () => void,
-  ): { requestOptions?: RequestOptions; newCb: undefined | (() => void) } {
-    if (requestOptions?.signal === undefined) {
-      return { requestOptions, newCb: undefined };
-    }
-    const { signal } = requestOptions;
-    if (lastCb !== undefined) signal.removeEventListener("abort", lastCb);
-    const ac = new AbortController();
-    const newCb = () => ac.abort();
-    signal.addEventListener("abort", newCb);
-    return {
-      requestOptions: { ...requestOptions, signal: ac.signal },
-      newCb,
-    };
-  }
-
   async *#list(
     cbParseList:
       | Parser["parseListIdentifiers"]
@@ -136,11 +106,9 @@ export class OaiPmh<Parser extends OaiPmhParserInterface> {
     },
   ) {
     const { listOptions, requestOptions } = options;
-    let requestOpAndCb = this
-      .#getRequestOptionsWithNewSignal(requestOptions);
     const xml = await this.#request(
       { ...listOptions, verb },
-      requestOpAndCb.requestOptions,
+      requestOptions,
     );
     let next = cbParseList.call(
       this.#xmlParser,
@@ -149,14 +117,9 @@ export class OaiPmh<Parser extends OaiPmhParserInterface> {
     yield next.records;
 
     while (next.resumptionToken !== null) {
-      requestOpAndCb = this
-        .#getRequestOptionsWithNewSignal(
-          requestOptions,
-          requestOpAndCb.newCb,
-        );
       const xml = await this.#request(
         { verb, resumptionToken: next.resumptionToken },
-        requestOpAndCb.requestOptions,
+        requestOptions,
       );
       next = cbParseList.call(
         this.#xmlParser,

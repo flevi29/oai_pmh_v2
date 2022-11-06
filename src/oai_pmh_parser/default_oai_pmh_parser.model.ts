@@ -1,5 +1,4 @@
-type NonUndefined<T> = T extends undefined ? never : T;
-
+// deno-lint-ignore-file no-explicit-any
 type ResumptionTokenObj = {
   resumptionToken?: string | {
     "#text": string;
@@ -7,16 +6,16 @@ type ResumptionTokenObj = {
 };
 
 type OaiObj = {
-  Identify?: Record<string, unknown>;
-  GetRecord?: Record<string, unknown>;
-  ListIdentifiers?: ResumptionTokenObj & { header: unknown[] };
-  ListMetadataFormats?: { metadataFormat: unknown[] };
-  ListRecords?: ResumptionTokenObj & { record: unknown[] };
-  ListSets?: { set: unknown[] };
+  Identify?: Record<string, any>;
+  GetRecord?: Record<string, any>;
+  ListIdentifiers?: ResumptionTokenObj & { header: any[] };
+  ListMetadataFormats?: { metadataFormat: any[] };
+  ListRecords?: ResumptionTokenObj & { record: any[] };
+  ListSets?: { set: any[] };
 };
 
 type RequiredOaiObj = {
-  [k in keyof OaiObj]-?: NonUndefined<OaiObj[k]>;
+  [k in keyof OaiObj]-?: Exclude<OaiObj[k], undefined>;
 };
 
 type OaiErrorObj = {
@@ -30,4 +29,13 @@ type OaiResponse = {
   "OAI-PMH": OaiErrorObj | OaiObj;
 };
 
-export type { NonUndefined, OaiObj, OaiResponse, RequiredOaiObj };
+type DefaultOAIReturnTypes = {
+  Identify: RequiredOaiObj["Identify"];
+  GetRecord: RequiredOaiObj["GetRecord"];
+  ListIdentifiers: RequiredOaiObj["ListIdentifiers"]["header"];
+  ListMetadataFormats: RequiredOaiObj["ListMetadataFormats"]["metadataFormat"];
+  ListRecords: RequiredOaiObj["ListRecords"]["record"];
+  ListSets: RequiredOaiObj["ListSets"]["set"];
+};
+
+export type { DefaultOAIReturnTypes, OaiObj, OaiResponse, RequiredOaiObj };
