@@ -1,12 +1,23 @@
-[![Version](https://badgen.net/npm/v/oai_pmh_v2)](https://www.npmjs.com/package/oai_pmh_v2)
+[![Version][npm-svg]][npm-url]
+[![Deno][deno-svg]][deno-url]
 
-# What is this?
+## What is this?
 
 It's a blazingly fast
 [OAI-PMH Version 2.0](https://www.openarchives.org/OAI/openarchivesprotocol.html)
 API client module for Node.js and Deno.
 
-Example:
+### Install for Node.js
+
+```sh
+npm i oai_pmh_v2 fast-xml-parser@^4.0.11
+```
+
+> NOTE: `fast-xml-parser` is an optional dependency, only required if the provided
+> parser `OaiPmhParser` is used, so if you're not implementing your own parser you
+> need it.
+
+### Example:
 
 ```typescript
 // Node.js
@@ -18,7 +29,7 @@ import {
 } from "https://deno.land/x/oai_pmh_v2/src/mod.ts";
 
 (async () => {
-  // you can find a bunch of OAI-PMH providers here (although a lot of them might be non functional):
+  // You can find a bunch of OAI-PMH providers here (although a lot of them might be non functional):
   // https://www.openarchives.org/Register/BrowseSites
   const oaiPmh = new OaiPmh(new OaiPmhParser(), {
     baseUrl:
@@ -31,7 +42,7 @@ import {
 })().catch(console.error);
 ```
 
-Define your own types, customize parser options, implement your own parser:
+### Define your own types, customize parser options, implement your own parser:
 
 ```typescript
 // Define your types
@@ -65,3 +76,8 @@ export class MyOaiPmhParser<
 Find examples for all methods in
 [examples directory](https://github.com/flevi29/oai_pmh_v2/tree/main/examples).
 Some things are only documented via types for now.
+
+[npm-svg]: https://img.shields.io/npm/v/oai_pmh_v2.svg?style=flat-square
+[npm-url]: https://npmjs.org/package/oai_pmh_v2
+[deno-svg]: https://img.shields.io/badge/deno-land-blueviolet?style=flat-square
+[deno-url]: https://deno.land/x/oai_pmh_v2
