@@ -2,23 +2,25 @@
 
 # What is this?
 
-A blazingly fast module for Node.js and Deno to communicate through "The Open
-Archives Initiative Protocol for Metadata Harvesting" with OAI-PMH providers. It
-is targeting
-[version 2 of OAI-PMH](https://www.openarchives.org/OAI/openarchivesprotocol.html).
+It's a blazingly fast
+[OAI-PMH Version 2.0](https://www.openarchives.org/OAI/openarchivesprotocol.html)
+API client module for Node.js and Deno.
 
 Example:
 
 ```typescript
 // Node.js
-import { OaiPmh } from "oai_pmh_v2";
+import { OaiPmh, OaiPmhParser } from "oai_pmh_v2";
 // Deno
-import { OaiPmh } from "https://deno.land/x/oai_pmh_v2/src/mod.ts";
+import {
+  OaiPmh,
+  OaiPmhParser,
+} from "https://deno.land/x/oai_pmh_v2/src/mod.ts";
 
 (async () => {
   // you can find a bunch of OAI-PMH providers here (although a lot of them might be non functional):
   // https://www.openarchives.org/Register/BrowseSites
-  const oaiPmh = OaiPmh.getNewWithDefaultParser({
+  const oaiPmh = new OaiPmh(new OaiPmhParser(), {
     baseUrl:
       "http://bibliotecavirtual.asturias.es/i18n/oai/oai_bibliotecavirtual.asturias.es.cmd",
   });
@@ -27,6 +29,37 @@ import { OaiPmh } from "https://deno.land/x/oai_pmh_v2/src/mod.ts";
 
   console.log(info);
 })().catch(console.error);
+```
+
+Define your own types, customize parser options, implement your own parser:
+
+```typescript
+// Define your types
+new OaiPmhParser<{
+  Identify: Record<string, unknown>;
+  GetRecord: Record<string, unknown>;
+  ListIdentifiers: unknown[];
+  ListMetadataFormats: unknown[];
+  ListRecords: MARCRecordUnit[];
+  ListSets: unknown[];
+}>();
+
+// Custom options
+new OaiPmhParser({
+  ignoreAttributes: false,
+  parseAttributeValue: false,
+  parseTagValue: false,
+  isArray: (_, jPath) => alwaysArrayPaths.indexOf(jPath) !== -1,
+});
+
+// Implement custom parser
+import type { OaiPmhParserInterface } from "https://deno.land/x/oai_pmh_v2/src/mod.ts";
+
+export class MyOaiPmhParser<
+  TOAIReturnTypes extends DefaultOAIReturnTypes = DefaultOAIReturnTypes,
+> implements OaiPmhParserInterface<TOAIReturnTypes> {
+  // ...
+}
 ```
 
 Find examples for all methods in
