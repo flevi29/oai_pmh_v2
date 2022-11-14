@@ -1,4 +1,5 @@
 import { build, emptyDir } from "../dev_deps.ts";
+import { version } from "../deno.json" assert { type: "json" };
 
 await emptyDir("./npm");
 
@@ -14,7 +15,7 @@ await build({
   package: {
     // package.json properties
     name: "oai_pmh_v2",
-    version: "0.4.2",
+    version,
     author: "Fodor Levente",
     license: "MIT",
     description: "Deno and Node.js API module for OAI-PMH.",
@@ -35,7 +36,7 @@ await build({
     peerDependenciesMeta: { "fast-xml-parser": { optional: true } },
   },
   mappings: {
-    "https://cdn.skypack.dev/fast-xml-parser@^4.0.11?dts": {
+    "npm:fast-xml-parser@^4.0.11": {
       name: "fast-xml-parser",
       version: "^4.0.11",
       peerDependency: true,

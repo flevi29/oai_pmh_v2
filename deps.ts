@@ -1,7 +1,7 @@
 import {
   X2jOptionsOptional,
   XMLParser,
-} from "https://cdn.skypack.dev/fast-xml-parser@^4.0.11?dts";
+} from "npm:fast-xml-parser@^4.0.11";
 
 export { XMLParser };
 export type { X2jOptionsOptional };
