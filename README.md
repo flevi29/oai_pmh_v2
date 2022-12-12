@@ -1,5 +1,4 @@
-[![Version][npm-svg]][npm-url]
-[![Deno][deno-svg]][deno-url]
+[![Version][npm-svg]][npm-url] [![Deno][deno-svg]][deno-url]
 
 ## What is this?
 
@@ -13,9 +12,9 @@ API client module for Node.js and Deno.
 npm i oai_pmh_v2 fast-xml-parser@^4.0.11
 ```
 
-> NOTE: `fast-xml-parser` is an optional dependency, only required if the provided
-> parser `OaiPmhParser` is used, so if you're not implementing your own parser you
-> need it.
+> NOTE: `fast-xml-parser` is an optional dependency, only required if the
+> provided parser `OaiPmhParser` is used, so if you're not implementing your own
+> parser you need it.
 
 ### Example:
 

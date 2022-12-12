@@ -1,18 +1,17 @@
 import { OaiPmhError } from "./errors/oai_pmh_error.ts";
-import { applyRecordToURLSearchParams } from "./util/apply_record_to_url_search_params.ts";
 import type {
   BaseOptions,
   ListOptions,
   OaiPmhOptionsConstructor,
   RequestOptions,
 } from "./oai_pmh.model.ts";
-import type { OaiPmhParserInterface } from "./oai_pmh_parser/oai_pmh_parser.interface.ts";
+import type { IOaiPmhParser } from "./oai_pmh_parser/oai_pmh_parser.interface.ts";
 
-export class OaiPmh<Parser extends OaiPmhParserInterface> {
-  readonly #xmlParser: Parser;
+export class OaiPmh<TParser extends IOaiPmhParser = IOaiPmhParser> {
+  readonly #xmlParser: TParser;
   readonly #requestOptions: BaseOptions;
 
-  constructor(parser: Parser, options: OaiPmhOptionsConstructor) {
+  constructor(parser: TParser, options: OaiPmhOptionsConstructor) {
     this.#xmlParser = parser;
     this.#requestOptions = {
       baseUrl: new URL(options.baseUrl),
@@ -21,27 +20,46 @@ export class OaiPmh<Parser extends OaiPmhParserInterface> {
   }
 
   async #checkResponse(response: Response) {
-    if (response.ok) return;
-    const { status, statusText } = response;
-    const errorMsg = await response.text();
-    const msg = `HTTP Error response: ${status} ${statusText}${
-      errorMsg.trim() ? ` | ${errorMsg}` : ""
-    }`;
-    throw new OaiPmhError(msg, status);
+    if (!response.ok) {
+      const { status, statusText } = response;
+      const errorMsg = await response.text();
+      const msg = `HTTP Error response: ${status} ${statusText}${
+        errorMsg.trim() ? ` | ${errorMsg}` : ""
+      }`;
+      throw new OaiPmhError(msg, status);
+    }
+  }
+
+  #getNewURLWithSearchParams(
+    url: URL,
+    record: Record<string, undefined | string>,
+  ) {
+    const newUrl = new URL(url);
+    for (const [key, val] of Object.entries(record)) {
+      if (val === void 0) {
+        continue;
+      }
+      newUrl.searchParams.set(key, val);
+    }
+    return newUrl;
   }
 
   async #request(
     searchParams: Record<string, string | undefined>,
     options?: RequestOptions,
   ): Promise<string> {
-    const url = new URL(this.#requestOptions.baseUrl);
-    applyRecordToURLSearchParams(url.searchParams, searchParams);
     try {
-      const response = await fetch(url, {
-        method: "GET",
-        signal: options?.signal,
-        headers: this.#requestOptions.userAgent,
-      });
+      const response = await fetch(
+        this.#getNewURLWithSearchParams(this.#requestOptions.baseUrl, searchParams),
+        {
+          signal: options?.signal,
+          headers: this.#requestOptions.userAgent,
+          mode: "cors",
+          credentials: "omit",
+          // @ts-ignore: Apparently there's no cache property in undici
+          cache: "no-store",
+        },
+      );
       await this.#checkResponse(response);
       return response.text();
     } catch (err: unknown) {
@@ -64,21 +82,19 @@ export class OaiPmh<Parser extends OaiPmhParserInterface> {
 
   async identify(
     requestOptions?: RequestOptions,
-  ): Promise<ReturnType<Parser["parseIdentify"]>> {
+  ): Promise<ReturnType<TParser["parseIdentify"]>> {
     const xml = await this.#request(
       { verb: "Identify" },
       requestOptions,
     );
-    return <ReturnType<Parser["parseIdentify"]>> this.#xmlParser.parseIdentify(
-      xml,
-    );
+    return this.#xmlParser.parseIdentify(xml);
   }
 
   async getRecord(
     identifier: string,
     metadataPrefix: string,
     requestOptions?: RequestOptions,
-  ): Promise<ReturnType<Parser["parseGetRecord"]>> {
+  ): Promise<ReturnType<TParser["parseGetRecord"]>> {
     const xml = await this.#request(
       {
         verb: "GetRecord",
@@ -87,16 +103,13 @@ export class OaiPmh<Parser extends OaiPmhParserInterface> {
       },
       requestOptions,
     );
-    return <ReturnType<Parser["parseGetRecord"]>> this.#xmlParser
-      .parseGetRecord(
-        xml,
-      );
+    return this.#xmlParser.parseGetRecord(xml);
   }
 
   async *#list(
-    cbParseList:
-      | Parser["parseListIdentifiers"]
-      | Parser["parseListRecords"],
+    parseListCallback:
+      | TParser["parseListIdentifiers"]
+      | TParser["parseListRecords"],
     verb:
       | "ListIdentifiers"
       | "ListRecords",
@@ -110,10 +123,7 @@ export class OaiPmh<Parser extends OaiPmhParserInterface> {
       { ...listOptions, verb },
       requestOptions,
     );
-    let next = cbParseList.call(
-      this.#xmlParser,
-      xml,
-    );
+    let next = parseListCallback(xml);
     yield next.records;
 
     while (next.resumptionToken !== null) {
@@ -121,10 +131,7 @@ export class OaiPmh<Parser extends OaiPmhParserInterface> {
         { verb, resumptionToken: next.resumptionToken },
         requestOptions,
       );
-      next = cbParseList.call(
-        this.#xmlParser,
-        xml,
-      );
+      next = parseListCallback(xml);
       yield next.records;
     }
   }
@@ -132,12 +139,12 @@ export class OaiPmh<Parser extends OaiPmhParserInterface> {
   listIdentifiers(
     listOptions: ListOptions,
     requestOptions?: RequestOptions,
-  ) {
-    return <AsyncGenerator<
-      ReturnType<Parser["parseListIdentifiers"]>["records"],
-      void
-    >> this.#list(
-      this.#xmlParser.parseListIdentifiers,
+  ): AsyncGenerator<
+    ReturnType<TParser["parseListIdentifiers"]>["records"],
+    void
+  > {
+    return this.#list(
+      this.#xmlParser.parseListIdentifiers.bind(this.#xmlParser),
       "ListIdentifiers",
       { listOptions, requestOptions },
     );
@@ -146,26 +153,23 @@ export class OaiPmh<Parser extends OaiPmhParserInterface> {
   async listMetadataFormats(
     identifier?: string,
     requestOptions?: RequestOptions,
-  ) {
+  ): Promise<ReturnType<TParser["parseListMetadataFormats"]>> {
     const xml = await this.#request(
       { verb: "ListMetadataFormats", identifier },
       requestOptions,
     );
-    return <ReturnType<Parser["parseListMetadataFormats"]>> this.#xmlParser
-      .parseListMetadataFormats(
-        xml,
-      );
+    return this.#xmlParser.parseListMetadataFormats(xml);
   }
 
   listRecords(
     listOptions: ListOptions,
     requestOptions?: RequestOptions,
-  ) {
-    return <AsyncGenerator<
-      ReturnType<Parser["parseListRecords"]>["records"],
-      void
-    >> this.#list(
-      this.#xmlParser.parseListRecords,
+  ): AsyncGenerator<
+    ReturnType<TParser["parseListRecords"]>["records"],
+    void
+  > {
+    return this.#list(
+      this.#xmlParser.parseListRecords.bind(this.#xmlParser),
       "ListRecords",
       { listOptions, requestOptions },
     );
@@ -173,14 +177,11 @@ export class OaiPmh<Parser extends OaiPmhParserInterface> {
 
   async listSets(
     requestOptions?: RequestOptions,
-  ) {
+  ): Promise<ReturnType<TParser["parseListSets"]>> {
     const xml = await this.#request(
       { verb: "ListSets" },
       requestOptions,
     );
-    return <ReturnType<Parser["parseListSets"]>> this.#xmlParser
-      .parseListSets(
-        xml,
-      );
+    return this.#xmlParser.parseListSets(xml);
   }
 }

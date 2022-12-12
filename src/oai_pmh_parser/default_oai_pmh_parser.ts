@@ -1,7 +1,7 @@
 import { X2jOptionsOptional, XMLParser } from "../../deps.ts";
 import { OaiPmhError } from "../errors/oai_pmh_error.ts";
 import type {
-  OaiPmhParserInterface,
+  IOaiPmhParser,
   TokenAndRecords,
 } from "./oai_pmh_parser.interface.ts";
 import type {
@@ -13,7 +13,7 @@ import type {
 
 export class OaiPmhParser<
   TOAIReturnTypes extends DefaultOAIReturnTypes = DefaultOAIReturnTypes,
-> implements OaiPmhParserInterface<TOAIReturnTypes> {
+> implements IOaiPmhParser<TOAIReturnTypes> {
   readonly #xmlParser;
 
   constructor(

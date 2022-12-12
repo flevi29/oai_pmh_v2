@@ -13,7 +13,7 @@ type DefaultOAIReturnTypes = {
   ListSets: any;
 };
 
-interface OaiPmhParserInterface<
+interface IOaiPmhParser<
   TOAIReturnTypes extends DefaultOAIReturnTypes = DefaultOAIReturnTypes,
 > {
   parseIdentify(xml: string): TOAIReturnTypes["Identify"];
@@ -33,4 +33,4 @@ interface OaiPmhParserInterface<
   parseListSets(xml: string): TOAIReturnTypes["ListSets"];
 }
 
-export type { OaiPmhParserInterface, TokenAndRecords };
+export type { IOaiPmhParser, TokenAndRecords };

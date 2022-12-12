@@ -1,5 +1,5 @@
 import { build, emptyDir } from "../dev_deps.ts";
-import { version } from "../deno.json" assert { type: "json" };
+import { default as denoJson } from "../deno.json" assert { type: "json" };
 
 await emptyDir("./npm");
 
@@ -15,7 +15,7 @@ await build({
   package: {
     // package.json properties
     name: "oai_pmh_v2",
-    version,
+    version: denoJson.version,
     author: "Fodor Levente",
     license: "MIT",
     description: "Deno and Node.js API module for OAI-PMH.",
@@ -30,17 +30,10 @@ await build({
     },
     homepage: "https://github.com/flevi29/oai_pmh_v2#readme",
     devDependencies: {
-      "@types/node": "^18.11.9",
-      "fast-xml-parser": "^4.0.11",
+      "@types/node": "^18.11.13",
+      "fast-xml-parser": "^4.0.12",
     },
     peerDependenciesMeta: { "fast-xml-parser": { optional: true } },
-  },
-  mappings: {
-    "npm:fast-xml-parser@^4.0.11": {
-      name: "fast-xml-parser",
-      version: "^4.0.11",
-      peerDependency: true,
-    },
   },
   compilerOptions: {
     target: "Latest",
