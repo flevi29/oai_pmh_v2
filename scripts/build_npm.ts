@@ -27,7 +27,7 @@ await build({
   typeCheck: true,
   test: false,
   declaration: true,
-  scriptModule: "cjs",
+  scriptModule: false,
   esModule: true,
   package: {
     // package.json properties

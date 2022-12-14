@@ -12,10 +12,15 @@ API client module for Node.js and Deno.
 npm i oai_pmh_v2
 ```
 
+> NOTE: This is an ESM only module, so in the default commonjs Node.js
+> environment it needs to be
+> [dynamically imported](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/import)
+> (see example comment)
+
 ### Example
 
 ```typescript
-// Node.js
+// module Node.js
 import { OaiPmh, OaiPmhParser } from "oai_pmh_v2";
 // Deno
 import {
@@ -24,6 +29,8 @@ import {
 } from "https://deno.land/x/oai_pmh_v2/src/mod.ts";
 
 (async () => {
+  // For commonjs Node.js use dynamic import:
+  // const { OaiPmh, OaiPmhParser } = await import("oai_pmh_v2");
   // You can find a bunch of OAI-PMH providers here (although a lot of them might be non functional):
   // https://www.openarchives.org/Register/BrowseSites
   const oaiPmh = new OaiPmh(new OaiPmhParser(), {
