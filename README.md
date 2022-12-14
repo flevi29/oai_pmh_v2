@@ -9,14 +9,10 @@ API client module for Node.js and Deno.
 ### Install for Node.js
 
 ```sh
-npm i oai_pmh_v2 fast-xml-parser@^4.0.11
+npm i oai_pmh_v2
 ```
 
-> NOTE: `fast-xml-parser` is an optional dependency, only required if the
-> provided parser `OaiPmhParser` is used, so if you're not implementing your own
-> parser you need it.
-
-### Example:
+### Example
 
 ```typescript
 // Node.js

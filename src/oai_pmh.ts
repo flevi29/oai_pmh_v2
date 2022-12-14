@@ -50,13 +50,16 @@ export class OaiPmh<TParser extends IOaiPmhParser = IOaiPmhParser> {
   ): Promise<string> {
     try {
       const response = await fetch(
-        this.#getNewURLWithSearchParams(this.#requestOptions.baseUrl, searchParams),
+        this.#getNewURLWithSearchParams(
+          this.#requestOptions.baseUrl,
+          searchParams,
+        ).href,
         {
           signal: options?.signal,
           headers: this.#requestOptions.userAgent,
+          // @ts-ignore: In node-fetch mode doesn't exist
           mode: "cors",
           credentials: "omit",
-          // @ts-ignore: Apparently there's no cache property in undici
           cache: "no-store",
         },
       );

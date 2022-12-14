@@ -6,7 +6,24 @@ await emptyDir("./npm");
 await build({
   entryPoints: ["./src/mod.ts"],
   outDir: "./npm",
-  shims: { undici: true },
+  shims: {
+    custom: [{
+      package: {
+        name: "node-fetch",
+        version: "^3.3.0",
+      },
+      globalNames: [{
+        // for the `fetch` global...
+        name: "fetch",
+        // use the default export of node-fetch
+        exportName: "default",
+      }, {
+        name: "Response",
+        exportName: "Response",
+        typeOnly: true,
+      }],
+    }],
+  },
   typeCheck: true,
   test: false,
   declaration: true,
@@ -20,7 +37,6 @@ await build({
     license: "MIT",
     description: "Deno and Node.js API module for OAI-PMH.",
     keywords: ["OAI-PMH", "oaipmh", "oai", "metadata", "harvest", "protocol"],
-    engines: { node: ">=16.8" },
     repository: {
       type: "git",
       url: "git+https://github.com/flevi29/oai_pmh_v2.git",
@@ -29,11 +45,7 @@ await build({
       url: "https://github.com/flevi29/oai_pmh_v2/issues",
     },
     homepage: "https://github.com/flevi29/oai_pmh_v2#readme",
-    devDependencies: {
-      "@types/node": "^18.11.13",
-      "fast-xml-parser": "^4.0.12",
-    },
-    peerDependenciesMeta: { "fast-xml-parser": { optional: true } },
+    devDependencies: { "@types/node": "^18.11.13" },
   },
   compilerOptions: {
     target: "Latest",
