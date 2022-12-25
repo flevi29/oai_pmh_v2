@@ -10,17 +10,12 @@ type RequestOptions = {
   retry?: number;
 };
 
-type BaseOptions = {
-  baseUrl: URL;
-  userAgent: { "User-Agent": string };
-};
 type OaiPmhOptionsConstructor = {
-  baseUrl: string;
+  baseUrl: URL | string;
   userAgent?: string;
 };
 
 export type {
-  BaseOptions,
   ListOptions,
   OaiPmhOptionsConstructor,
   RequestOptions,

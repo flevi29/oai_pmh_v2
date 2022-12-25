@@ -1,10 +1,10 @@
 import { X2jOptionsOptional, XMLParser } from "../../deps.ts";
 import { OaiPmhError } from "../errors/oai_pmh_error.ts";
-import type {
+import {
   IOaiPmhParser,
   TokenAndRecords,
 } from "./oai_pmh_parser.interface.ts";
-import type {
+import {
   DefaultOAIReturnTypes,
   OaiObj,
   OaiResponse,
@@ -28,8 +28,8 @@ export class OaiPmhParser<
     this.#xmlParser = new XMLParser(parserOptions);
   }
 
-  #getNonComformantErrorMessage(object: Record<string, unknown>) {
-    return `Returned data does not conform to OAI-PMH\nProblematic object: ${
+  #getNonconformingErrorMessage(object: Record<string, unknown>) {
+    return `returned data does not conform to OAI-PMH\nproblematic object: ${
       JSON.stringify(object)
     }`;
   }
@@ -38,7 +38,7 @@ export class OaiPmhParser<
     const obj: OaiResponse = this.#xmlParser.parse(xml);
     const oaiResponse = obj["OAI-PMH"];
     if (typeof oaiResponse !== "object") {
-      throw new OaiPmhError(this.#getNonComformantErrorMessage(oaiResponse));
+      throw new OaiPmhError(this.#getNonconformingErrorMessage(oaiResponse));
     }
     if ("error" in oaiResponse) {
       const { error: { "#text": text, "@_code": code } } = oaiResponse;
@@ -49,16 +49,15 @@ export class OaiPmhParser<
     return oaiResponse;
   }
 
-  #getPropertyOrThrowOnUndefined<T>(
-    property: T,
+  #getPropertyOrThrowOnUndefined<TProperty>(
+    property: TProperty,
     parentObject: OaiObj,
-  ): Exclude<T, undefined> {
-    // The type checker is doing backflips over this type guard
-    // Maybe there's a solution for doing it properly but it's just not worth it
-    if (property !== void 0) {
-      return <Exclude<T, undefined>> property;
+  ): Exclude<TProperty, undefined> {
+    // This type guard does not guard
+    if (property !== undefined) {
+      return <Exclude<TProperty, undefined>> property;
     }
-    throw new OaiPmhError(this.#getNonComformantErrorMessage(parentObject));
+    throw new OaiPmhError(this.#getNonconformingErrorMessage(parentObject));
   }
 
   parseIdentify(xml: string): TOAIReturnTypes["Identify"] {

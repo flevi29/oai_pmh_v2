@@ -1,47 +1,45 @@
 import { OaiPmhError } from "./errors/oai_pmh_error.ts";
-import type {
-  BaseOptions,
+import { getURLWithParameters } from "./url_search_params.ts";
+import {
   ListOptions,
   OaiPmhOptionsConstructor,
   RequestOptions,
 } from "./oai_pmh.model.ts";
-import type { IOaiPmhParser } from "./oai_pmh_parser/oai_pmh_parser.interface.ts";
+import { IOaiPmhParser } from "./oai_pmh_parser/oai_pmh_parser.interface.ts";
 
 export class OaiPmh<TParser extends IOaiPmhParser = IOaiPmhParser> {
   readonly #xmlParser: TParser;
-  readonly #requestOptions: BaseOptions;
+  readonly #baseURL: string;
+  readonly #userAgent: { "User-Agent": string };
+
+  #coerceAndCheckURL(url: URL | string) {
+    if (typeof url === "string") {
+      // check if it's a valid URL
+      new URL(url);
+      return url;
+    }
+    return url.href;
+  }
 
   constructor(parser: TParser, options: OaiPmhOptionsConstructor) {
     this.#xmlParser = parser;
-    this.#requestOptions = {
-      baseUrl: new URL(options.baseUrl),
-      userAgent: { "User-Agent": options.userAgent || "oai_pmh_v2" },
-    };
+    const { baseUrl, userAgent } = options;
+      this.#baseURL = this.#coerceAndCheckURL(baseUrl);
+      this.#userAgent = { "User-Agent": userAgent || "oai_pmh_v2" };
   }
 
   async #checkResponse(response: Response) {
     if (!response.ok) {
       const { status, statusText } = response;
-      const errorMsg = await response.text();
-      const msg = `HTTP Error response: ${status} ${statusText}${
-        errorMsg.trim() ? ` | ${errorMsg}` : ""
-      }`;
-      throw new OaiPmhError(msg, status);
+      const messageFromServer = await response.text();
+      const errorMessage =
+        `request to ${response.url} failed with HTTP status ${status} ${statusText}${
+          messageFromServer.trim() !== ""
+            ? ` | response from server: ${messageFromServer}`
+            : ""
+        }`;
+      throw new OaiPmhError(errorMessage, response);
     }
-  }
-
-  #getNewURLWithSearchParams(
-    url: URL,
-    record: Record<string, undefined | string>,
-  ) {
-    const newUrl = new URL(url);
-    for (const [key, val] of Object.entries(record)) {
-      if (val === void 0) {
-        continue;
-      }
-      newUrl.searchParams.set(key, val);
-    }
-    return newUrl;
   }
 
   async #request(
@@ -50,13 +48,10 @@ export class OaiPmh<TParser extends IOaiPmhParser = IOaiPmhParser> {
   ): Promise<string> {
     try {
       const response = await fetch(
-        this.#getNewURLWithSearchParams(
-          this.#requestOptions.baseUrl,
-          searchParams,
-        ).href,
+        getURLWithParameters(this.#baseURL, searchParams),
         {
           signal: options?.signal,
-          headers: this.#requestOptions.userAgent,
+          headers: this.#userAgent,
           // @ts-ignore: In node-fetch mode doesn't exist
           mode: "cors",
           credentials: "omit",
@@ -65,21 +60,19 @@ export class OaiPmh<TParser extends IOaiPmhParser = IOaiPmhParser> {
       );
       await this.#checkResponse(response);
       return response.text();
-    } catch (err: unknown) {
+    } catch (error: unknown) {
+      // @TODO: Add retryInterval
+      const retry = options?.retry;
       if (
-        err instanceof OaiPmhError &&
-        err.httpStatus !== void 0 &&
-        err.httpStatus >= 500 && options?.retry !== void 0
+        !(error instanceof OaiPmhError) || error.response === undefined ||
+        error.response.status < 500 || retry === undefined || retry < 1
       ) {
-        const { retry } = options;
-        if (retry > 0) {
-          return this.#request(searchParams, {
-            ...options,
-            retry: retry - 1,
-          });
-        }
+        throw error;
       }
-      throw err;
+      return this.#request(searchParams, {
+        ...options,
+        retry: retry - 1,
+      });
     }
   }
 
