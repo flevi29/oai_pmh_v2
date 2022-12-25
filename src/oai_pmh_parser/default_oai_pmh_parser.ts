@@ -1,9 +1,6 @@
 import { X2jOptionsOptional, XMLParser } from "../../deps.ts";
 import { OaiPmhError } from "../errors/oai_pmh_error.ts";
-import {
-  IOaiPmhParser,
-  TokenAndRecords,
-} from "./oai_pmh_parser.interface.ts";
+import { IOaiPmhParser, TokenAndRecords } from "./oai_pmh_parser.interface.ts";
 import {
   DefaultOAIReturnTypes,
   OaiObj,

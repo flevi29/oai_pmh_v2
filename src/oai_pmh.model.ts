@@ -8,15 +8,13 @@ type ListOptions = {
 type RequestOptions = {
   signal?: AbortSignal;
   retry?: number;
+  retryInterval?: number;
 };
 
 type OaiPmhOptionsConstructor = {
   baseUrl: URL | string;
   userAgent?: string;
+  debugLogRetries?: boolean;
 };
 
-export type {
-  ListOptions,
-  OaiPmhOptionsConstructor,
-  RequestOptions,
-};
+export type { ListOptions, OaiPmhOptionsConstructor, RequestOptions };

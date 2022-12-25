@@ -11,6 +11,7 @@ export class OaiPmh<TParser extends IOaiPmhParser = IOaiPmhParser> {
   readonly #xmlParser: TParser;
   readonly #baseURL: string;
   readonly #userAgent: { "User-Agent": string };
+  readonly #debugLogRetries: boolean;
 
   #coerceAndCheckURL(url: URL | string) {
     if (typeof url === "string") {
@@ -24,8 +25,9 @@ export class OaiPmh<TParser extends IOaiPmhParser = IOaiPmhParser> {
   constructor(parser: TParser, options: OaiPmhOptionsConstructor) {
     this.#xmlParser = parser;
     const { baseUrl, userAgent } = options;
-      this.#baseURL = this.#coerceAndCheckURL(baseUrl);
-      this.#userAgent = { "User-Agent": userAgent || "oai_pmh_v2" };
+    this.#baseURL = this.#coerceAndCheckURL(baseUrl);
+    this.#userAgent = { "User-Agent": userAgent || "oai_pmh_v2" };
+    this.#debugLogRetries = options?.debugLogRetries ?? false;
   }
 
   async #checkResponse(response: Response) {
@@ -61,13 +63,24 @@ export class OaiPmh<TParser extends IOaiPmhParser = IOaiPmhParser> {
       await this.#checkResponse(response);
       return response.text();
     } catch (error: unknown) {
-      // @TODO: Add retryInterval
-      const retry = options?.retry;
+      const retry = options?.retry ?? 3;
+      const retryInterval = options?.retryInterval ?? 1000;
       if (
         !(error instanceof OaiPmhError) || error.response === undefined ||
-        error.response.status < 500 || retry === undefined || retry < 1
+        error.response.status < 500 || retry < 1
       ) {
         throw error;
+      }
+      if (this.#debugLogRetries) {
+        console.debug(error);
+      }
+      if (retryInterval > 0) {
+        if (this.#debugLogRetries) {
+          console.debug(
+            `retrying request in ${retryInterval.toString(10)}ms"`,
+          );
+        }
+        await new Promise((resolve) => setTimeout(resolve, retryInterval));
       }
       return this.#request(searchParams, {
         ...options,
