@@ -4,7 +4,7 @@ try {
   for await (
     const arr of oaiPmh.listIdentifiers(
       { metadataPrefix: "marc21" },
-      { signal: AbortSignal.timeout(170000) },
+      { signal: AbortSignal.timeout(17000) },
     )
   ) {
     console.log(arr);

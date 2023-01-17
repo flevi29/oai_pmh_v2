@@ -2,12 +2,12 @@ import { FetchError } from "./fetch_error.ts";
 import { getURLWithParameters } from "./url_search_params.ts";
 import {
   ListOptions,
-  OaiPmhOptionsConstructor,
+  OAIPMHOptionsConstructor,
   RequestOptions,
 } from "./oai_pmh.model.ts";
-import { IOaiPmhParser } from "./oai_pmh_parser/oai_pmh_parser.interface.ts";
+import { IOAIPMHParser } from "./oai_pmh_parser/oai_pmh_parser.interface.ts";
 
-export class OaiPmh<TParser extends IOaiPmhParser = IOaiPmhParser> {
+export class OAIPMH<TParser extends IOAIPMHParser> {
   readonly #xmlParser: TParser;
   readonly #baseURL: string;
   readonly #userAgent: { "User-Agent": string };
@@ -22,7 +22,7 @@ export class OaiPmh<TParser extends IOaiPmhParser = IOaiPmhParser> {
     return url.href;
   }
 
-  constructor(parser: TParser, options: OaiPmhOptionsConstructor) {
+  constructor(parser: TParser, options: OAIPMHOptionsConstructor) {
     this.#xmlParser = parser;
     const { baseUrl, userAgent } = options;
     this.#baseURL = this.#coerceAndCheckURL(baseUrl);
@@ -116,9 +116,7 @@ export class OaiPmh<TParser extends IOaiPmhParser = IOaiPmhParser> {
   }
 
   async *#list(
-    parseListCallback:
-      | TParser["parseListIdentifiers"]
-      | TParser["parseListRecords"],
+    parseListCallback: TParser["parseListIdentifiers" | "parseListRecords"],
     verb:
       | "ListIdentifiers"
       | "ListRecords",

@@ -1,17 +1,19 @@
 import { X2jOptionsOptional, XMLParser } from "../../deps.ts";
-import { OaiPmhError } from "./oai_pmh_error.ts";
-import { IOaiPmhParser, TokenAndRecords } from "./oai_pmh_parser.interface.ts";
+import { OAIPMHError } from "./oai_pmh_error.ts";
+import { IOAIPMHParser, TokenAndRecords } from "./oai_pmh_parser.interface.ts";
 import {
-  DefaultOAIReturnTypes,
-  OaiObj,
-  OaiResponse,
-  RequiredOaiObj,
-} from "./default_oai_pmh_parser.model.ts";
+  OAIBaseObj,
+  OAIMethodTypesDefault,
+  OAIMethodTypesFinalType,
+  OAIMethodTypesToExtend,
+  OAIResponse,
+  ResumptionTokenObj,
+} from "./parser.model.ts";
 
-export class OaiPmhParser<
-  TOAIReturnTypes extends DefaultOAIReturnTypes = DefaultOAIReturnTypes,
-> implements IOaiPmhParser<TOAIReturnTypes> {
-  readonly #xmlParser;
+export class OAIPMHParser<
+  TOAIReturnTypes extends OAIMethodTypesToExtend = OAIMethodTypesDefault,
+> implements IOAIPMHParser<TOAIReturnTypes> {
+  readonly #xmlParser: XMLParser;
 
   constructor(
     parserOptions: X2jOptionsOptional = {
@@ -25,21 +27,21 @@ export class OaiPmhParser<
     this.#xmlParser = new XMLParser(parserOptions);
   }
 
-  #getNonconformingErrorMessage(object: Record<string, unknown>) {
-    return `returned data does not conform to OAI-PMH\nproblematic object: ${
-      JSON.stringify(object)
-    }`;
+  #getNonconformingError(object: Record<string, unknown>) {
+    return new Error(
+      `returned data does not conform to OAI-PMH:\n${JSON.stringify(object)}`,
+    );
   }
 
-  #parseOaiPmhXml(xml: string): OaiObj {
-    const obj: OaiResponse = this.#xmlParser.parse(xml);
+  #parseOaiPmhXml(xml: string): OAIBaseObj {
+    const obj: OAIResponse = this.#xmlParser.parse(xml);
     const oaiResponse = obj["OAI-PMH"];
     if (typeof oaiResponse !== "object") {
-      throw new Error(this.#getNonconformingErrorMessage(oaiResponse));
+      throw this.#getNonconformingError(oaiResponse);
     }
     if ("error" in oaiResponse) {
       const { error: { "#text": text, "@_code": code } } = oaiResponse;
-      throw new OaiPmhError(
+      throw new OAIPMHError(
         `OAI-PMH provider returned an error:${
           text ? `\n\ttext: ${text}` : ""
         }\n\tcode: ${code}`,
@@ -50,34 +52,36 @@ export class OaiPmhParser<
     return oaiResponse;
   }
 
-  #getPropertyOrThrowOnUndefined<TProperty>(
-    property: TProperty,
-    parentObject: OaiObj,
-  ): Exclude<TProperty, undefined> {
-    // This type guard does not guard
-    if (property !== undefined) {
-      return <Exclude<TProperty, undefined>> property;
+  parseIdentify<
+    TIdentify
+      extends (undefined extends TOAIReturnTypes["Identify"]
+        ? OAIMethodTypesFinalType["Identify"]
+        : TOAIReturnTypes["Identify"]),
+  >(xml: string) {
+    const parsedXml = this.#parseOaiPmhXml(xml);
+    const identify = parsedXml.Identify;
+    if (identify === undefined) {
+      throw this.#getNonconformingError(parsedXml);
     }
-    throw new Error(this.#getNonconformingErrorMessage(parentObject));
+    return <TIdentify> identify;
   }
 
-  parseIdentify(xml: string): TOAIReturnTypes["Identify"] {
+  parseGetRecord<
+    TGetRecord
+      extends (undefined extends TOAIReturnTypes["GetRecord"]
+        ? OAIMethodTypesFinalType["GetRecord"]
+        : TOAIReturnTypes["GetRecord"]),
+  >(xml: string) {
     const parsedXml = this.#parseOaiPmhXml(xml);
-    return <TOAIReturnTypes["Identify"]> this.#getPropertyOrThrowOnUndefined(
-      parsedXml.Identify,
-      parsedXml,
-    );
+    const record = parsedXml.GetRecord;
+    if (record === undefined) {
+      throw this.#getNonconformingError(parsedXml);
+    }
+    return <TGetRecord> record;
   }
 
-  parseGetRecord(xml: string): TOAIReturnTypes["GetRecord"] {
-    const parsedXml = this.#parseOaiPmhXml(xml);
-    return this.#getPropertyOrThrowOnUndefined(parsedXml.GetRecord, parsedXml);
-  }
-
-  #parseResumptionToken(
-    parsedVerb:
-      | RequiredOaiObj["ListIdentifiers"]
-      | RequiredOaiObj["ListRecords"],
+  #parseResumptionToken<TVerb extends ResumptionTokenObj>(
+    parsedVerb: TVerb,
   ): string | null {
     const { resumptionToken: rt } = parsedVerb;
     return typeof rt === "object"
@@ -87,53 +91,65 @@ export class OaiPmhParser<
       : null;
   }
 
-  parseListIdentifiers(
-    xml: string,
-  ): TokenAndRecords<TOAIReturnTypes["ListIdentifiers"]> {
+  parseListIdentifiers<
+    TListIdentifiers
+      extends (undefined extends TOAIReturnTypes["ListIdentifiers"]
+        ? OAIMethodTypesFinalType["ListIdentifiers"]
+        : TOAIReturnTypes["ListIdentifiers"]),
+  >(xml: string) {
     const parsedXml = this.#parseOaiPmhXml(xml);
-    const parsedVerb = this.#getPropertyOrThrowOnUndefined(
-      parsedXml.ListIdentifiers,
-      parsedXml,
-    );
-    return {
+    const parsedVerb = parsedXml.ListIdentifiers;
+    if (parsedVerb === undefined) {
+      throw this.#getNonconformingError(parsedXml);
+    }
+    return <TokenAndRecords<TListIdentifiers>> {
       records: parsedVerb.header,
       resumptionToken: this.#parseResumptionToken(parsedVerb),
     };
   }
 
-  parseListMetadataFormats(
-    xml: string,
-  ): TOAIReturnTypes["ListMetadataFormats"] {
+  parseListMetadataFormats<
+    TListMetadataFormats
+      extends (undefined extends TOAIReturnTypes["ListMetadataFormats"]
+        ? OAIMethodTypesFinalType["ListMetadataFormats"]
+        : TOAIReturnTypes["ListMetadataFormats"]),
+  >(xml: string) {
     const parsedXml = this.#parseOaiPmhXml(xml);
-    const parsedVerb = this.#getPropertyOrThrowOnUndefined(
-      parsedXml.ListMetadataFormats,
-      parsedXml,
-    );
-    return parsedVerb.metadataFormat;
+    const parsedVerb = parsedXml.ListMetadataFormats;
+    if (parsedVerb === undefined) {
+      throw this.#getNonconformingError(parsedXml);
+    }
+    return <TListMetadataFormats> parsedVerb.metadataFormat;
   }
 
-  parseListRecords(
-    xml: string,
-  ): TokenAndRecords<TOAIReturnTypes["ListRecords"]> {
+  parseListRecords<
+    TListRecords
+      extends (undefined extends TOAIReturnTypes["ListRecords"]
+        ? OAIMethodTypesFinalType["ListRecords"]
+        : TOAIReturnTypes["ListRecords"]),
+  >(xml: string) {
     const parsedXml = this.#parseOaiPmhXml(xml);
-    const parsedVerb = this.#getPropertyOrThrowOnUndefined(
-      parsedXml.ListRecords,
-      parsedXml,
-    );
-    return {
+    const parsedVerb = parsedXml.ListRecords;
+    if (parsedVerb === undefined) {
+      throw this.#getNonconformingError(parsedXml);
+    }
+    return <TokenAndRecords<TListRecords>> {
       records: parsedVerb.record,
       resumptionToken: this.#parseResumptionToken(parsedVerb),
     };
   }
 
-  parseListSets(
-    xml: string,
-  ): TOAIReturnTypes["ListSets"] {
+  parseListSets<
+    TListSets
+      extends (undefined extends TOAIReturnTypes["ListSets"]
+        ? OAIMethodTypesFinalType["ListSets"]
+        : TOAIReturnTypes["ListSets"]),
+  >(xml: string) {
     const parsedXml = this.#parseOaiPmhXml(xml);
-    const parsedVerb = this.#getPropertyOrThrowOnUndefined(
-      parsedXml.ListSets,
-      parsedXml,
-    );
-    return parsedVerb.set;
+    const parsedVerb = parsedXml.ListSets;
+    if (parsedVerb === undefined) {
+      throw this.#getNonconformingError(parsedXml);
+    }
+    return <TListSets> parsedVerb.set;
   }
 }

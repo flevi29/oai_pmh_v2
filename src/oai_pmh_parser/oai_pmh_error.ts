@@ -1,6 +1,6 @@
-import { Code } from "./default_oai_pmh_parser.model.ts";
+import { Code } from "./parser.model.ts";
 
-export class OaiPmhError extends Error {
+export class OAIPMHError extends Error {
   readonly #code: Code;
   get code() {
     return this.#code;

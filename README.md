@@ -49,12 +49,8 @@ import {
 ```typescript
 // Define your types
 new OaiPmhParser<{
-  Identify: Record<string, unknown>;
-  GetRecord: Record<string, unknown>;
-  ListIdentifiers: unknown[];
-  ListMetadataFormats: unknown[];
+  GetRecord: MARCRecordUnit;
   ListRecords: MARCRecordUnit[];
-  ListSets: unknown[];
 }>();
 
 // Custom options
@@ -64,15 +60,6 @@ new OaiPmhParser({
   parseTagValue: false,
   isArray: (_, jPath) => alwaysArrayPaths.indexOf(jPath) !== -1,
 });
-
-// Implement custom parser
-import type { OaiPmhParserInterface } from "https://deno.land/x/oai_pmh_v2/src/mod.ts";
-
-export class MyOaiPmhParser<
-  TOAIReturnTypes extends DefaultOAIReturnTypes = DefaultOAIReturnTypes,
-> implements OaiPmhParserInterface<TOAIReturnTypes> {
-  // ...
-}
 ```
 
 Find examples for all methods in

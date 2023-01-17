@@ -11,10 +11,10 @@ type RequestOptions = {
   retryInterval?: number;
 };
 
-type OaiPmhOptionsConstructor = {
+type OAIPMHOptionsConstructor = {
   baseUrl: URL | string;
   userAgent?: string;
   debugLogRetries?: boolean;
 };
 
-export type { ListOptions, OaiPmhOptionsConstructor, RequestOptions };
+export type { ListOptions, OAIPMHOptionsConstructor, RequestOptions };

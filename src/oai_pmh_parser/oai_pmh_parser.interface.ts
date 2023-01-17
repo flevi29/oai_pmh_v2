@@ -1,36 +1,48 @@
 // deno-lint-ignore-file no-explicit-any
+import {
+  OAIMethodTypesDefault,
+  OAIMethodTypesToExtend,
+} from "./parser.model.ts";
+
 type TokenAndRecords<T> = {
   resumptionToken: string | null;
   records: T;
 };
 
-type DefaultOAIReturnTypes = {
-  Identify: any;
-  GetRecord: any;
-  ListIdentifiers: any;
-  ListMetadataFormats: any;
-  ListRecords: any;
-  ListSets: any;
-};
-
-interface IOaiPmhParser<
-  TOAIReturnTypes extends DefaultOAIReturnTypes = DefaultOAIReturnTypes,
+interface IOAIPMHParser<
+  TOAIReturnTypes extends OAIMethodTypesToExtend = OAIMethodTypesDefault,
 > {
-  parseIdentify(xml: string): TOAIReturnTypes["Identify"];
+  parseIdentify<
+    TIdentify extends (undefined extends TOAIReturnTypes["Identify"] ? any
+      : TOAIReturnTypes["Identify"]),
+  >(xml: string): TIdentify;
 
-  parseGetRecord(xml: string): TOAIReturnTypes["GetRecord"];
+  parseGetRecord<
+    TGetRecord extends (undefined extends TOAIReturnTypes["GetRecord"] ? any
+      : TOAIReturnTypes["GetRecord"]),
+  >(xml: string): TGetRecord;
 
-  parseListIdentifiers(
-    xml: string,
-  ): TokenAndRecords<TOAIReturnTypes["ListIdentifiers"]>;
+  parseListIdentifiers<
+    TListIdentifiers
+      extends (undefined extends TOAIReturnTypes["ListIdentifiers"] ? any
+        : TOAIReturnTypes["ListIdentifiers"]),
+  >(xml: string): TokenAndRecords<TListIdentifiers>;
 
-  parseListMetadataFormats(xml: string): TOAIReturnTypes["ListMetadataFormats"];
+  parseListMetadataFormats<
+    TListMetadataFormats
+      extends (undefined extends TOAIReturnTypes["ListMetadataFormats"] ? any
+        : TOAIReturnTypes["ListMetadataFormats"]),
+  >(xml: string): TListMetadataFormats;
 
-  parseListRecords(
-    xml: string,
-  ): TokenAndRecords<TOAIReturnTypes["ListRecords"]>;
+  parseListRecords<
+    TListRecords extends (undefined extends TOAIReturnTypes["ListRecords"] ? any
+      : TOAIReturnTypes["ListRecords"]),
+  >(xml: string): TokenAndRecords<TListRecords>;
 
-  parseListSets(xml: string): TOAIReturnTypes["ListSets"];
+  parseListSets<
+    TListSets extends (undefined extends TOAIReturnTypes["ListSets"] ? any
+      : TOAIReturnTypes["ListSets"]),
+  >(xml: string): TListSets;
 }
 
-export type { IOaiPmhParser, TokenAndRecords };
+export type { IOAIPMHParser, TokenAndRecords };

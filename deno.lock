@@ -156,7 +156,8 @@
   "npm": {
     "specifiers": {
       "fast-xml-parser@^4.0.11": "fast-xml-parser@4.0.11",
-      "fast-xml-parser@^4.0.12": "fast-xml-parser@4.0.12"
+      "fast-xml-parser@^4.0.12": "fast-xml-parser@4.0.12",
+      "fast-xml-parser@^4.0.13": "fast-xml-parser@4.0.13"
     },
     "packages": {
       "fast-xml-parser@4.0.11": {
@@ -165,6 +166,10 @@
       },
       "fast-xml-parser@4.0.12": {
         "integrity": "sha512-/Nmo3823Rfx7UTJosQNz6hBVbszfv1Unb7A4iNJZhvCGCgtIHv/uODmrYIH8vc05+XKZ4hNIOv6SlBejvJgATw==",
+        "dependencies": { "strnum": "strnum@1.0.5" }
+      },
+      "fast-xml-parser@4.0.13": {
+        "integrity": "sha512-g+OboAw8ol1FgTHhKLR7ZHcItNudceiY04BBrvqa0JBWoPhi/+e5r4H5AeW+EsQCroJLJwsuOP3dD3c6cc5uOg==",
         "dependencies": { "strnum": "strnum@1.0.5" }
       },
       "strnum@1.0.5": {
