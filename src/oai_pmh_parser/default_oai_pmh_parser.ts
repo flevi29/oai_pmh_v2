@@ -1,5 +1,5 @@
 import { X2jOptionsOptional, XMLParser } from "../../deps.ts";
-import { OaiPmhError } from "../errors/oai_pmh_error.ts";
+import { OaiPmhError } from "./oai_pmh_error.ts";
 import { IOaiPmhParser, TokenAndRecords } from "./oai_pmh_parser.interface.ts";
 import {
   DefaultOAIReturnTypes,
@@ -35,12 +35,16 @@ export class OaiPmhParser<
     const obj: OaiResponse = this.#xmlParser.parse(xml);
     const oaiResponse = obj["OAI-PMH"];
     if (typeof oaiResponse !== "object") {
-      throw new OaiPmhError(this.#getNonconformingErrorMessage(oaiResponse));
+      throw new Error(this.#getNonconformingErrorMessage(oaiResponse));
     }
     if ("error" in oaiResponse) {
       const { error: { "#text": text, "@_code": code } } = oaiResponse;
       throw new OaiPmhError(
-        `OAI-PMH provider returned an error:\n\ttext: ${text}\n\tcode: ${code}`,
+        `OAI-PMH provider returned an error:${
+          text ? `\n\ttext: ${text}` : ""
+        }\n\tcode: ${code}`,
+        code,
+        text,
       );
     }
     return oaiResponse;
@@ -54,7 +58,7 @@ export class OaiPmhParser<
     if (property !== undefined) {
       return <Exclude<TProperty, undefined>> property;
     }
-    throw new OaiPmhError(this.#getNonconformingErrorMessage(parentObject));
+    throw new Error(this.#getNonconformingErrorMessage(parentObject));
   }
 
   parseIdentify(xml: string): TOAIReturnTypes["Identify"] {

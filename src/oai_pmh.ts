@@ -1,4 +1,4 @@
-import { OaiPmhError } from "./errors/oai_pmh_error.ts";
+import { FetchError } from "./fetch_error.ts";
 import { getURLWithParameters } from "./url_search_params.ts";
 import {
   ListOptions,
@@ -40,7 +40,7 @@ export class OaiPmh<TParser extends IOaiPmhParser = IOaiPmhParser> {
             ? ` | response from server: ${messageFromServer}`
             : ""
         }`;
-      throw new OaiPmhError(errorMessage, response);
+      throw new FetchError(errorMessage, response);
     }
   }
 
@@ -66,7 +66,7 @@ export class OaiPmh<TParser extends IOaiPmhParser = IOaiPmhParser> {
       const retry = options?.retry ?? 3;
       const retryInterval = options?.retryInterval ?? 1000;
       if (
-        !(error instanceof OaiPmhError) || error.response === undefined ||
+        !(error instanceof FetchError) || error.response === undefined ||
         error.response.status < 500 || retry < 1
       ) {
         throw error;

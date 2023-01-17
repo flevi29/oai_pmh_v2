@@ -6,7 +6,17 @@ type ResumptionTokenObj = {
 };
 
 type OaiObj = {
-  Identify?: Record<string, any>;
+  Identify?: {
+    repositoryName: string;
+    baseURL: string;
+    protocolVersion: string;
+    earliestDatestamp: string;
+    deletedRecord: "no" | "transient" | "persistent";
+    granularity: `YYYY-MM-DD${"Thh:mm:ssZ" | ""}`;
+    adminEmail: string[] | string;
+    compression?: string;
+    description?: string;
+  };
   GetRecord?: Record<string, any>;
   ListIdentifiers?: ResumptionTokenObj & { header: any[] };
   ListMetadataFormats?: { metadataFormat: any[] };
@@ -18,10 +28,20 @@ type RequiredOaiObj = {
   [k in keyof OaiObj]-?: Exclude<OaiObj[k], undefined>;
 };
 
+type Code =
+  | "badArgument"
+  | "badResumptionToken"
+  | "badVerb"
+  | "cannotDisseminateFormat"
+  | "idDoesNotExist"
+  | "noRecordsMatch"
+  | "noMetadataFormats"
+  | "noSetHierarchy";
+
 type OaiErrorObj = {
   error: {
     "#text"?: string;
-    "@_code": string;
+    "@_code": Code;
   };
 };
 
@@ -38,4 +58,10 @@ type DefaultOAIReturnTypes = {
   ListSets: RequiredOaiObj["ListSets"]["set"];
 };
 
-export type { DefaultOAIReturnTypes, OaiObj, OaiResponse, RequiredOaiObj };
+export type {
+  Code,
+  DefaultOAIReturnTypes,
+  OaiObj,
+  OaiResponse,
+  RequiredOaiObj,
+};

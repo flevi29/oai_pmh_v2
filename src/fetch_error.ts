@@ -1,4 +1,4 @@
-export class OaiPmhError extends Error {
+export class FetchError extends Error {
   readonly #response?: Response;
 
   get response() {
