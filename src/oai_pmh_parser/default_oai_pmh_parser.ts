@@ -87,7 +87,7 @@ export class OAIPMHParser<
     return typeof rt === "object"
       ? rt["#text"] || null
       : typeof rt === "string"
-      ? rt
+      ? rt || null
       : null;
   }
 
