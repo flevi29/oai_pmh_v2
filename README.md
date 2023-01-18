@@ -44,7 +44,7 @@ import {
 })().catch(console.error);
 ```
 
-### Define your own types, customize parser options, implement your own parser:
+### Define your own types, customize parser options
 
 ```typescript
 // Define your types

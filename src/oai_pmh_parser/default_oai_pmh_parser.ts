@@ -85,7 +85,7 @@ export class OAIPMHParser<
   ): string | null {
     const { resumptionToken: rt } = parsedVerb;
     return typeof rt === "object"
-      ? rt["#text"] ?? null
+      ? rt["#text"] || null
       : typeof rt === "string"
       ? rt
       : null;
