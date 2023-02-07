@@ -1,6 +1,6 @@
 import { Code } from "./parser.model.ts";
 
-export class OAIPMHError extends Error {
+export class ParsedOAIPMHError extends Error {
   readonly #code: Code;
   get code() {
     return this.#code;
@@ -13,6 +13,7 @@ export class OAIPMHError extends Error {
 
   constructor(message: string, code: Code, text?: string) {
     super(message);
+    this.name = ParsedOAIPMHError.name;
     this.#code = code;
     this.#text = text;
   }

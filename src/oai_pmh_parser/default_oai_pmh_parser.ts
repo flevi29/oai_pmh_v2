@@ -1,5 +1,5 @@
 import { X2jOptionsOptional, XMLParser } from "../../deps.ts";
-import { OAIPMHError } from "./oai_pmh_error.ts";
+import { ParsedOAIPMHError } from "./parsed_oai_pmh_error.ts";
 import { IOAIPMHParser, TokenAndRecords } from "./oai_pmh_parser.interface.ts";
 import {
   OAIBaseObj,
@@ -41,7 +41,7 @@ export class OAIPMHParser<
     }
     if ("error" in oaiResponse) {
       const { error: { "#text": text, "@_code": code } } = oaiResponse;
-      throw new OAIPMHError(
+      throw new ParsedOAIPMHError(
         `OAI-PMH provider returned an error:${
           text ? `\n\ttext: ${text}` : ""
         }\n\tcode: ${code}`,

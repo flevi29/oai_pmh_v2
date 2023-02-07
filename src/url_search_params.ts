@@ -1,6 +1,6 @@
 type SearchParamsRecord = Record<string, string | undefined>;
 
-function appendRecordToUrlSearchParams(
+function recordToUrlSearchParams(
   record: SearchParamsRecord,
 ) {
   const searchParams = new URLSearchParams();
@@ -22,6 +22,6 @@ export function getURLWithParameters(
   if (record === undefined) {
     return url;
   }
-  const searchParams = appendRecordToUrlSearchParams(record);
+  const searchParams = recordToUrlSearchParams(record);
   return url + "?" + searchParams.toString();
 }

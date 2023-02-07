@@ -9,7 +9,9 @@ try {
   ) {
     console.log(arr);
   }
-} catch (e: unknown) {
-  if (!(e instanceof DOMException)) throw e;
+} catch (error: unknown) {
+  if (!(error instanceof DOMException)) {
+    throw error;
+  }
   console.warn("Aborted");
 }

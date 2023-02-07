@@ -9,6 +9,8 @@ type TokenAndRecords<T> = {
   records: T;
 };
 
+// @TODO Drop all this generic kerfuffle, drop ability to implement own parser, people are better off cloning this
+//       project and implementing their own parsers that way
 interface IOAIPMHParser<
   TOAIReturnTypes extends OAIMethodTypesToExtend = OAIMethodTypesDefault,
 > {
