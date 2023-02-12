@@ -1,41 +1,57 @@
-// deno-lint-ignore-file no-explicit-any
-type ResumptionTokenObj = {
+type MaybeArr<T> = T | T[];
+
+type OAIResumptionTokenResponse = {
   resumptionToken?: string | {
     "#text": string;
   };
 };
 
-type OAIMethodTypes = {
-  Identify: {
-    repositoryName: string;
-    baseURL: string;
-    protocolVersion: string;
-    earliestDatestamp: string;
-    deletedRecord: "no" | "transient" | "persistent";
-    granularity: `YYYY-MM-DD${"Thh:mm:ssZ" | ""}`;
-    // @TODO This might not be true
-    adminEmail: string[] | string;
-    compression?: string;
-    description?: string;
-  };
-  GetRecord: Record<string, any>;
-  ListIdentifiers: ResumptionTokenObj & { header: any[] };
-  ListMetadataFormats: { metadataFormat: any[] };
-  ListRecords: ResumptionTokenObj & { record: any[] };
-  ListSets: { set: any[] };
-};
-type OAIMethodTypesToExtend = { [k in keyof OAIMethodTypes]?: any };
-type OAIMethodTypesDefault = { [k in keyof OAIMethodTypes]?: undefined };
-type OAIMethodTypesFinalType = {
-  [k in keyof OAIMethodTypes]: k extends "ListIdentifiers"
-    ? OAIMethodTypes[k]["header"]
-    : k extends "ListMetadataFormats" ? OAIMethodTypes[k]["metadataFormat"]
-    : k extends "ListRecords" ? OAIMethodTypes[k]["record"]
-    : k extends "ListSets" ? OAIMethodTypes[k]["set"]
-    : OAIMethodTypes[k];
+type OAIDescriptionContainer = { URL: string; [key: string]: unknown };
+
+type OAIRepositoryDescription = {
+  repositoryName: string;
+  baseURL: string;
+  protocolVersion: string;
+  earliestDatestamp: string;
+  deletedRecord: "no" | "transient" | "persistent";
+  granularity: `YYYY-MM-DD${"Thh:mm:ssZ" | ""}`;
+  adminEmail: MaybeArr<string>;
+  compression?: MaybeArr<string>;
+  description?: MaybeArr<Record<string, OAIDescriptionContainer>>;
+  [key: string]: unknown;
 };
 
-type OAIBaseObj = Partial<OAIMethodTypes>;
+type OAIRecordHeader = {
+  identifier: string;
+  datestamp: string;
+  setSpec: MaybeArr<string>;
+  status?: "deleted";
+};
+
+type OAIRecord<TMetadata = unknown> = {
+  header: OAIRecordHeader;
+  metadata: TMetadata;
+  about?: MaybeArr<unknown>;
+};
+
+type OAIMetadataFormat = {
+  metadataPrefix: string;
+  schema: string;
+  metadataNamespace: string;
+};
+
+type OAISet = { setSpec: string; setName: string };
+
+type OAIBaseObj = Partial<{
+  Identify: OAIRepositoryDescription;
+  GetRecord: OAIRecord;
+  ListIdentifiers: OAIResumptionTokenResponse & {
+    header: MaybeArr<OAIRecordHeader>;
+  };
+  ListMetadataFormats: { metadataFormat: MaybeArr<OAIMetadataFormat> };
+  ListRecords: OAIResumptionTokenResponse & { record: MaybeArr<OAIRecord> };
+  ListSets: { set: MaybeArr<OAISet> };
+}>;
 
 type Code =
   | "badArgument"
@@ -60,10 +76,14 @@ type OAIResponse = {
 
 export type {
   Code,
+  MaybeArr,
   OAIBaseObj,
-  OAIMethodTypesDefault,
-  OAIMethodTypesFinalType,
-  OAIMethodTypesToExtend,
+  OAIErrorObj,
+  OAIMetadataFormat,
+  OAIRecord,
+  OAIRecordHeader,
+  OAIRepositoryDescription,
   OAIResponse,
-  ResumptionTokenObj,
+  OAIResumptionTokenResponse,
+  OAISet,
 };

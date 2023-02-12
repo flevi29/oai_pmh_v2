@@ -1,19 +1,16 @@
 import { OAIPMHError } from "./oai_pmh_error.ts";
 import { getURLWithParameters } from "./url_search_params.ts";
+import { OAIPMHParser } from "./oai_pmh_parser/oai_pmh_parser.ts";
 import {
   ListOptions,
   OAIPMHOptionsConstructor,
   RequestOptions,
 } from "./oai_pmh.model.ts";
-import { IOAIPMHParser } from "./oai_pmh_parser/oai_pmh_parser.interface.ts";
+import { MaybeArr, OAIRecord } from "./oai_pmh_parser/parser.model.ts";
 
-export class OAIPMH<TParser extends IOAIPMHParser> {
-  readonly #parseIdentify: TParser["parseIdentify"];
-  readonly #parseGetRecord: TParser["parseGetRecord"];
-  readonly #parseListIdentifiers: TParser["parseListIdentifiers"];
-  readonly #parseListMetadataFormats: TParser["parseListMetadataFormats"];
-  readonly #parseListRecords: TParser["parseListRecords"];
-  readonly #parseListSets: TParser["parseListSets"];
+export class OAIPMH {
+  readonly #parser: OAIPMHParser;
+
   readonly #baseURL: string;
   readonly #userAgent: { "User-Agent": string };
   readonly #debugLogRetries: boolean;
@@ -27,20 +24,15 @@ export class OAIPMH<TParser extends IOAIPMHParser> {
     return url.href;
   }
 
-  constructor(parser: TParser, options: OAIPMHOptionsConstructor) {
-    this.#parseIdentify = parser.parseIdentify.bind(parser);
-    this.#parseGetRecord = parser.parseGetRecord.bind(parser);
-    this.#parseListIdentifiers = parser.parseListIdentifiers.bind(parser);
-    this.#parseListMetadataFormats = parser.parseListMetadataFormats.bind(
-      parser,
-    );
-    this.#parseListRecords = parser.parseListRecords.bind(parser);
-    this.#parseListSets = parser.parseListSets.bind(parser);
-
+  constructor(
+    options: OAIPMHOptionsConstructor,
+  ) {
     const { baseUrl, userAgent } = options;
     this.#baseURL = this.#coerceAndCheckURL(baseUrl);
     this.#userAgent = { "User-Agent": userAgent || "oai_pmh_v2" };
     this.#debugLogRetries = options?.debugLogRetries ?? false;
+
+    this.#parser = new OAIPMHParser();
   }
 
   async #checkResponse(response: Response) {
@@ -118,49 +110,58 @@ export class OAIPMH<TParser extends IOAIPMHParser> {
           // deno-lint-ignore no-explicit-any
           ? (<any> error).message
           : error,
-        {
-          response,
-          cause: error,
-        },
+        { response, cause: error },
       );
     }
   }
 
-  async identify(
-    requestOptions?: RequestOptions,
-  ): Promise<ReturnType<TParser["parseIdentify"]>> {
-    const res = await this.#request(
-      { verb: "Identify" },
-      requestOptions,
-    );
-    return this.#callFnAndWrapError(this.#parseIdentify, ...res);
+  async identify(requestOptions?: RequestOptions) {
+    const res = await this.#request({ verb: "Identify" }, requestOptions);
+    return this.#callFnAndWrapError(this.#parser.parseIdentify, ...res);
   }
 
-  async getRecord(
+  async getRecord<TReturn = unknown>(
     identifier: string,
     metadataPrefix: string,
     requestOptions?: RequestOptions,
-  ): Promise<ReturnType<TParser["parseGetRecord"]>> {
-    const res = await this.#request(
-      {
-        verb: "GetRecord",
-        identifier,
-        metadataPrefix,
-      },
-      requestOptions,
+  ) {
+    const res = await this.#request({
+      verb: "GetRecord",
+      identifier,
+      metadataPrefix,
+    }, requestOptions);
+    return <OAIRecord<TReturn>> this.#callFnAndWrapError(
+      this.#parser.parseGetRecord,
+      ...res,
     );
-    return this.#callFnAndWrapError(this.#parseGetRecord, ...res);
   }
 
-  async *#list(
-    parseListCallback: TParser["parseListIdentifiers" | "parseListRecords"],
-    verb:
-      | "ListIdentifiers"
-      | "ListRecords",
-    options: {
-      listOptions: ListOptions;
-      requestOptions?: RequestOptions;
-    },
+  async listMetadataFormats(
+    identifier?: string,
+    requestOptions?: RequestOptions,
+  ) {
+    const res = await this.#request(
+      { verb: "ListMetadataFormats", identifier },
+      requestOptions,
+    );
+    return this.#callFnAndWrapError(
+      this.#parser.parseListMetadataFormats,
+      ...res,
+    );
+  }
+
+  async listSets(requestOptions?: RequestOptions) {
+    const res = await this.#request({ verb: "ListSets" }, requestOptions);
+    return this.#callFnAndWrapError(this.#parser.parseListSets, ...res);
+  }
+
+  async *#list<
+    TCB extends OAIPMHParser["parseListIdentifiers" | "parseListRecords"],
+    TReturn = ReturnType<TCB>["records"],
+  >(
+    parseListCallback: TCB,
+    verb: "ListIdentifiers" | "ListRecords",
+    options: { listOptions: ListOptions; requestOptions?: RequestOptions },
   ) {
     const { listOptions, requestOptions } = options;
     const resp = await this.#request(
@@ -168,7 +169,7 @@ export class OAIPMH<TParser extends IOAIPMHParser> {
       requestOptions,
     );
     let next = this.#callFnAndWrapError(parseListCallback, ...resp);
-    yield next.records;
+    yield next.records as TReturn;
 
     while (next.resumptionToken !== null) {
       const resp = await this.#request(
@@ -176,56 +177,28 @@ export class OAIPMH<TParser extends IOAIPMHParser> {
         requestOptions,
       );
       next = this.#callFnAndWrapError(parseListCallback, ...resp);
-      yield next.records;
+      yield next.records as TReturn;
     }
   }
 
-  listIdentifiers(
-    listOptions: ListOptions,
-    requestOptions?: RequestOptions,
-  ): AsyncGenerator<
-    ReturnType<TParser["parseListIdentifiers"]>["records"],
-    void
-  > {
-    return this.#list(
-      this.#parseListIdentifiers,
+  listIdentifiers(listOptions: ListOptions, requestOptions?: RequestOptions) {
+    return this.#list<OAIPMHParser["parseListIdentifiers"]>(
+      this.#parser.parseListIdentifiers,
       "ListIdentifiers",
       { listOptions, requestOptions },
     );
   }
 
-  async listMetadataFormats(
-    identifier?: string,
-    requestOptions?: RequestOptions,
-  ): Promise<ReturnType<TParser["parseListMetadataFormats"]>> {
-    const res = await this.#request(
-      { verb: "ListMetadataFormats", identifier },
-      requestOptions,
-    );
-    return this.#callFnAndWrapError(this.#parseListMetadataFormats, ...res);
-  }
-
-  listRecords(
+  listRecords<TReturn = unknown>(
     listOptions: ListOptions,
     requestOptions?: RequestOptions,
-  ): AsyncGenerator<
-    ReturnType<TParser["parseListRecords"]>["records"],
-    void
-  > {
-    return this.#list(
-      this.#parseListRecords,
-      "ListRecords",
-      { listOptions, requestOptions },
-    );
-  }
-
-  async listSets(
-    requestOptions?: RequestOptions,
-  ): Promise<ReturnType<TParser["parseListSets"]>> {
-    const res = await this.#request(
-      { verb: "ListSets" },
+  ) {
+    return this.#list<
+      OAIPMHParser["parseListRecords"],
+      MaybeArr<OAIRecord<TReturn>>
+    >(this.#parser.parseListRecords, "ListRecords", {
+      listOptions,
       requestOptions,
-    );
-    return this.#callFnAndWrapError(this.#parseListSets, ...res);
+    });
   }
 }

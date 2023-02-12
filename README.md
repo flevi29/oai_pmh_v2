@@ -2,7 +2,7 @@
 
 ## What is this?
 
-It's a "*blazingly fast*"
+It's a "_blazingly fast_"
 [OAI-PMH Version 2.0](https://www.openarchives.org/OAI/openarchivesprotocol.html)
 API client module for Node.js and Deno.
 
@@ -12,14 +12,14 @@ API client module for Node.js and Deno.
 npm i oai_pmh_v2
 ```
 
-> **Warning** In case you are using this with Node.js, this is an ESM only
-> module. Read more
+> **Note** For Node.js users this is an ESM only module. Read more
+> [here](https://www.typescriptlang.org/docs/handbook/esm-node.html) and maybe
 > [here](https://gist.github.com/sindresorhus/a39789f98801d908bbc7ff3ecc99d99c).
 
 ### Example
 
 ```typescript
-// module Node.js
+// Node.js
 import { OAIPMH, OAIPMHParser } from "oai_pmh_v2";
 // Deno
 import {
@@ -27,9 +27,9 @@ import {
   OAIPMHParser,
 } from "https://deno.land/x/oai_pmh_v2/src/mod.ts";
 
-// You can find a bunch of OAI-PMH providers here (although a lot of them might be non functional):
+// You can find OAI-PMH providers here (although a lot of them might be non functional):
 // https://www.openarchives.org/Register/BrowseSites
-const oaiPmh = new OAIPMH(new OAIPMHParser(), {
+const oaiPmh = new OAIPMH({
   baseUrl:
     "http://bibliotecavirtual.asturias.es/i18n/oai/oai_bibliotecavirtual.asturias.es.cmd",
 });
@@ -37,9 +37,22 @@ const oaiPmh = new OAIPMH(new OAIPMHParser(), {
 const info = await oaiPmh.identify({ signal: AbortSignal.timeout(20000) });
 
 console.log(info);
-```
 
-[//]: # (@TODO Add parser options and types)
+for await (
+  const records of oaiPmh.listRecords<
+    {
+      define: "the structure of";
+      the: "records";
+      like: { so: "!"; otherwise: "it's `unknown`" };
+    }
+  >(
+    { metadataPrefix: "marc21" },
+    { signal: AbortSignal.timeout(17000) },
+  )
+) {
+  console.log(records);
+}
+```
 
 Find examples for all methods in
 [examples directory](https://github.com/flevi29/oai_pmh_v2/tree/main/examples).

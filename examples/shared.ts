@@ -1,6 +1,6 @@
-import { OAIPMH, OAIPMHParser } from "../src/mod.ts";
+import { OAIPMH } from "../src/mod.ts";
 
-export const oaiPmh = new OAIPMH(new OAIPMHParser(), {
+export const oaiPmh = new OAIPMH({
   baseUrl:
     "http://bibliotecavirtual.asturias.es/i18n/oai/oai_bibliotecavirtual.asturias.es.cmd",
 });
