@@ -41,9 +41,11 @@ console.log(info);
 for await (
   const records of oaiPmh.listRecords<
     {
-      define: "the structure of";
-      the: "records";
-      like: { so: "!"; otherwise: "it's `unknown`" };
+      Define: "the structure of";
+      your: "records";
+      like: { so: "!"; Otherwise: { "they're of type": [unknown, "."] } };
+      "Don't": "forget that arrays with single elements won't be arrays"[];
+      due: { to: "the way xml works, so you'll always have to check!" };
     }
   >(
     { metadataPrefix: "marc21" },

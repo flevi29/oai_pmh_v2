@@ -9,11 +9,10 @@ import {
 import { MaybeArr, OAIRecord } from "./oai_pmh_parser/parser.model.ts";
 
 export class OAIPMH {
-  readonly #parser: OAIPMHParser;
-
   readonly #baseURL: string;
   readonly #userAgent: { "User-Agent": string };
   readonly #debugLogRetries: boolean;
+  readonly #parser: OAIPMHParser;
 
   #coerceAndCheckURL(url: URL | string) {
     if (typeof url === "string") {

@@ -13,7 +13,7 @@ export class OAIPMHParser {
     ignoreAttributes: false,
     parseAttributeValue: false,
     trimValues: false,
-    processEntities: false,
+    processEntities: true,
     parseTagValue: false,
   });
 

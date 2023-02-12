@@ -28,9 +28,16 @@ type OAIRecordHeader = {
   status?: "deleted";
 };
 
+// Due to XML parsing limitations, an array with a single value will not be an array
+type OAIRecordMetadata<T> = T extends (infer U)[] ? MaybeArr<U>
+  // deno-lint-ignore no-explicit-any
+  : T extends Record<string | number | symbol, any>
+    ? { [k in keyof T]: OAIRecordMetadata<T[k]> }
+  : T;
+
 type OAIRecord<TMetadata = unknown> = {
   header: OAIRecordHeader;
-  metadata: TMetadata;
+  metadata: OAIRecordMetadata<TMetadata>;
   about?: MaybeArr<unknown>;
 };
 
