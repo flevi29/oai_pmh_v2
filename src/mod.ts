@@ -11,9 +11,15 @@ export type {
 } from "./oai_pmh.model.ts";
 
 export type {
+  OAIErrorCode,
+  OAIMaybeArrMetadataFormat,
+  OAIMaybeArrRecord,
+  OAIMaybeArrRecordHeader,
+  OAIMaybeArrSet,
   OAIMetadataFormat,
   OAIRecord,
   OAIRecordHeader,
+  OAIRecordMetadata,
   OAIRepositoryDescription,
   OAISet,
 } from "./oai_pmh_parser/parser.model.ts";

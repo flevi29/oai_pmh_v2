@@ -12,7 +12,7 @@ export class OAIPMHParser {
   readonly #xmlParser = new XMLParser({
     ignoreAttributes: false,
     parseAttributeValue: false,
-    trimValues: false,
+    trimValues: true,
     processEntities: true,
     parseTagValue: false,
   });
@@ -53,7 +53,7 @@ export class OAIPMHParser {
     if (record === undefined) {
       throw new NonConformingError(parsedXml);
     }
-    return record;
+    return record.record;
   };
 
   parseListSets = (xml: string) => {

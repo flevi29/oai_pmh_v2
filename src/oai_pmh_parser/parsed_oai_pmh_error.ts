@@ -1,7 +1,7 @@
-import { Code } from "./parser.model.ts";
+import { OAIErrorCode } from "./parser.model.ts";
 
 export class ParsedOAIPMHError extends Error {
-  readonly #code: Code;
+  readonly #code: OAIErrorCode;
   get code() {
     return this.#code;
   }
@@ -11,7 +11,7 @@ export class ParsedOAIPMHError extends Error {
     return this.#text;
   }
 
-  constructor(message: string, code: Code, text?: string) {
+  constructor(message: string, code: OAIErrorCode, text?: string) {
     super(message);
     this.name = ParsedOAIPMHError.name;
     this.#code = code;

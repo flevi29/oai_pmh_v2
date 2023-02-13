@@ -6,7 +6,7 @@ import {
   OAIPMHOptionsConstructor,
   RequestOptions,
 } from "./oai_pmh.model.ts";
-import { MaybeArr, OAIRecord } from "./oai_pmh_parser/parser.model.ts";
+import { OAIMaybeArrRecord, OAIRecord } from "./oai_pmh_parser/parser.model.ts";
 
 export class OAIPMH {
   readonly #baseURL: string;
@@ -194,7 +194,7 @@ export class OAIPMH {
   ) {
     return this.#list<
       OAIPMHParser["parseListRecords"],
-      MaybeArr<OAIRecord<TReturn>>
+      OAIMaybeArrRecord<TReturn>
     >(this.#parser.parseListRecords, "ListRecords", {
       listOptions,
       requestOptions,

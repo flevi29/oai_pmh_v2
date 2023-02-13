@@ -27,6 +27,7 @@ type OAIRecordHeader = {
   setSpec: MaybeArr<string>;
   "@_status"?: "deleted";
 };
+type OAIMaybeArrRecordHeader = MaybeArr<OAIRecordHeader>;
 
 // Due to XML parsing limitations, an array with a single value will not be an array
 type OAIRecordMetadata<T> = T extends (infer U)[] ? MaybeArr<U>
@@ -43,27 +44,30 @@ type OAIRecord<TMetadata = unknown> = {
   metadata?: OAIRecordMetadata<TMetadata>;
   about?: MaybeArr<unknown>;
 };
+type OAIMaybeArrRecord<TMetadata = unknown> = MaybeArr<OAIRecord<TMetadata>>;
 
 type OAIMetadataFormat = {
   metadataPrefix: string;
   schema: string;
   metadataNamespace: string;
 };
+type OAIMaybeArrMetadataFormat = MaybeArr<OAIMetadataFormat>;
 
 type OAISet = { setSpec: string; setName: string };
+type OAIMaybeArrSet = MaybeArr<OAISet>;
 
 type OAIBaseObj = Partial<{
   Identify: OAIRepositoryDescription;
-  GetRecord: OAIRecord;
+  GetRecord: { record: OAIRecord };
   ListIdentifiers: OAIResumptionTokenResponse & {
-    header: MaybeArr<OAIRecordHeader>;
+    header: OAIMaybeArrRecordHeader;
   };
-  ListMetadataFormats: { metadataFormat: MaybeArr<OAIMetadataFormat> };
-  ListRecords: OAIResumptionTokenResponse & { record: MaybeArr<OAIRecord> };
-  ListSets: { set: MaybeArr<OAISet> };
+  ListMetadataFormats: { metadataFormat: OAIMaybeArrMetadataFormat };
+  ListRecords: OAIResumptionTokenResponse & { record: OAIMaybeArrRecord };
+  ListSets: { set: OAIMaybeArrSet };
 }>;
 
-type Code =
+type OAIErrorCode =
   | "badArgument"
   | "badResumptionToken"
   | "badVerb"
@@ -76,7 +80,7 @@ type Code =
 type OAIErrorObj = {
   error: {
     "#text"?: string;
-    "@_code": Code;
+    "@_code": OAIErrorCode;
   };
 };
 
@@ -85,13 +89,17 @@ type OAIResponse = {
 };
 
 export type {
-  Code,
-  MaybeArr,
   OAIBaseObj,
+  OAIErrorCode,
   OAIErrorObj,
+  OAIMaybeArrMetadataFormat,
+  OAIMaybeArrRecord,
+  OAIMaybeArrRecordHeader,
+  OAIMaybeArrSet,
   OAIMetadataFormat,
   OAIRecord,
   OAIRecordHeader,
+  OAIRecordMetadata,
   OAIRepositoryDescription,
   OAIResponse,
   OAIResumptionTokenResponse,
