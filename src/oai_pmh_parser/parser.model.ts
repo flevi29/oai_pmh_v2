@@ -25,7 +25,7 @@ type OAIRecordHeader = {
   identifier: string;
   datestamp: string;
   setSpec: MaybeArr<string>;
-  status?: "deleted";
+  "@_status"?: "deleted";
 };
 
 // Due to XML parsing limitations, an array with a single value will not be an array
@@ -35,9 +35,12 @@ type OAIRecordMetadata<T> = T extends (infer U)[] ? MaybeArr<U>
     ? { [k in keyof T]: OAIRecordMetadata<T[k]> }
   : T;
 
+// Header "@_status": "deleted" would mean metadata doesn't exist, but
+// cannot make typescript believe this fact without overly complicating everything
+// @TODO Maybe there's a way to accomplish this?
 type OAIRecord<TMetadata = unknown> = {
   header: OAIRecordHeader;
-  metadata: OAIRecordMetadata<TMetadata>;
+  metadata?: OAIRecordMetadata<TMetadata>;
   about?: MaybeArr<unknown>;
 };
 
