@@ -58,10 +58,10 @@ export class OAIPMH {
         {
           signal: options?.signal,
           headers: this.#userAgent,
-          // @ts-ignore: In node-fetch mode doesn't exist
-          mode: "cors",
           credentials: "omit",
-          cache: "no-store",
+          // @TODO https://developer.mozilla.org/en-US/docs/Web/HTTP/Caching#fresh_and_stale_based_on_age
+          //       https://developer.mozilla.org/en-US/docs/Web/API/Request/cache
+          //       NOTE: This is not yet implemented by undici fetch, so Node.js
         },
       );
       await this.#checkResponse(response);
