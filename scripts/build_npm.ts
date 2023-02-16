@@ -6,24 +6,7 @@ await emptyDir("./npm");
 await build({
   entryPoints: ["./src/mod.ts"],
   outDir: "./npm",
-  shims: {
-    custom: [{
-      package: {
-        name: "node-fetch",
-        version: "^3.3.0",
-      },
-      globalNames: [{
-        // for the `fetch` global...
-        name: "fetch",
-        // use the default export of node-fetch
-        exportName: "default",
-      }, {
-        name: "Response",
-        exportName: "Response",
-        typeOnly: true,
-      }],
-    }],
-  },
+  shims: { undici: true },
   typeCheck: true,
   test: false,
   declaration: true,
@@ -45,7 +28,7 @@ await build({
       url: "https://github.com/flevi29/oai_pmh_v2/issues",
     },
     homepage: "https://github.com/flevi29/oai_pmh_v2#readme",
-    devDependencies: { "@types/node": "^18.11.19" },
+    devDependencies: { "@types/node": "^18.13.0" },
   },
   compilerOptions: {
     target: "Latest",

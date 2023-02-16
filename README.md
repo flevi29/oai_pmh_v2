@@ -56,6 +56,14 @@ for await (
 }
 ```
 
+> **Note** As described in the example, every type specified as `T[]` will
+> become `T | T[]` because in XML there's no distinction between single element
+> array property or just a property with that element. You should always check
+> with
+> [`Array.isArray()`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/isArray).
+
+[//]: # (@TODO Also talk about attribute and text prefixes @_ and #)
+
 Find examples for all methods in
 [examples directory](https://github.com/flevi29/oai_pmh_v2/tree/main/examples).
 Some things are only documented via types for now.

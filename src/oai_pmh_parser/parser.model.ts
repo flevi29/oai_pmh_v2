@@ -37,7 +37,7 @@ type OAIRecordMetadata<T> = T extends (infer U)[] ? MaybeArr<U>
   : T;
 
 // Header "@_status": "deleted" would mean metadata doesn't exist, but
-// cannot make typescript believe this fact without overly complicating everything
+// couldn't make typescript believe this fact
 // @TODO Maybe there's a way to accomplish this?
 type OAIRecord<TMetadata = unknown> = {
   header: OAIRecordHeader;
