@@ -29,19 +29,12 @@ type OAIRecordHeader = {
 };
 type OAIMaybeArrRecordHeader = MaybeArr<OAIRecordHeader>;
 
-// Due to XML parsing limitations, an array with a single value will not be an array
-type OAIRecordMetadata<T> = T extends (infer U)[] ? MaybeArr<U>
-  // deno-lint-ignore no-explicit-any
-  : T extends Record<string | number | symbol, any>
-    ? { [k in keyof T]: OAIRecordMetadata<T[k]> }
-  : T;
-
 // Header "@_status": "deleted" would mean metadata doesn't exist, but
 // couldn't make typescript believe this fact
 // @TODO Maybe there's a way to accomplish this?
 type OAIRecord<TMetadata = unknown> = {
   header: OAIRecordHeader;
-  metadata?: OAIRecordMetadata<TMetadata>;
+  metadata?: TMetadata;
   about?: MaybeArr<unknown>;
 };
 type OAIMaybeArrRecord<TMetadata = unknown> = MaybeArr<OAIRecord<TMetadata>>;
@@ -89,6 +82,7 @@ type OAIResponse = {
 };
 
 export type {
+  MaybeArr,
   OAIBaseObj,
   OAIErrorCode,
   OAIErrorObj,
@@ -99,7 +93,6 @@ export type {
   OAIMetadataFormat,
   OAIRecord,
   OAIRecordHeader,
-  OAIRecordMetadata,
   OAIRepositoryDescription,
   OAIResponse,
   OAIResumptionTokenResponse,

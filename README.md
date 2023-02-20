@@ -20,9 +20,10 @@ npm i oai_pmh_v2
 
 ```typescript
 // Node.js
-import { OAIPMH, OAIPMHParser } from "oai_pmh_v2";
+import { MaybeArr, OAIPMH, OAIPMHParser } from "oai_pmh_v2";
 // Deno
 import {
+  MaybeArr,
   OAIPMH,
   OAIPMHParser,
 } from "https://deno.land/x/oai_pmh_v2/src/mod.ts";
@@ -44,8 +45,7 @@ for await (
       Define: "the structure of";
       your: "records";
       like: { so: "!"; Otherwise: { "they're of type": [unknown, "."] } };
-      "Don't": "forget that arrays with single elements won't be arrays"[];
-      due: { to: "the way xml works, so you'll always have to check!" };
+      Use: MaybeArr<" to define arrays">;
     }
   >(
     { metadataPrefix: "marc21" },
@@ -56,13 +56,18 @@ for await (
 }
 ```
 
-> **Note** As described in the example, every type specified as `T[]` will
-> become `T | T[]` because in XML there's no distinction between single element
-> array property or just a property with that element. You should always check
-> with
-> [`Array.isArray()`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/isArray).
+[//]: # (@TODO Talk about MaybeArr, cause metadata no more)
 
-[//]: # (@TODO Also talk about attribute and text prefixes @_ and #)
+> **Warning** Arrays require special attention because in XML there's no
+> distinction between single element array property or just a property with that
+> element. Properties of type `T[]` should be defined as `T | T[]` (import
+> `MaybeArr` utility type for convenience), and always checked with
+> [`Array.isArray()`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/isArray),
+> unless absolutely sure the array is always of length 2 or greater.
+
+> **Note** Parsed
+> [XML attributes](https://www.w3schools.com/xml/xml_attributes.asp) are
+> prefixed with `@_`, while XML text is parsed into `#text` property.
 
 Find examples for all methods in
 [examples directory](https://github.com/flevi29/oai_pmh_v2/tree/main/examples).

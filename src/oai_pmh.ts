@@ -59,9 +59,8 @@ export class OAIPMH {
           signal: options?.signal,
           headers: this.#userAgent,
           credentials: "omit",
-          // @TODO https://developer.mozilla.org/en-US/docs/Web/HTTP/Caching#fresh_and_stale_based_on_age
-          //       https://developer.mozilla.org/en-US/docs/Web/API/Request/cache
-          //       NOTE: This is not yet implemented by undici fetch, so Node.js
+          // @ts-ignore: No cache in undici type definitions
+          cache: "no-store",
         },
       );
       await this.#checkResponse(response);

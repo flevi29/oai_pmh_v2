@@ -11,6 +11,7 @@ export type {
 } from "./oai_pmh.model.ts";
 
 export type {
+  MaybeArr,
   OAIErrorCode,
   OAIMaybeArrMetadataFormat,
   OAIMaybeArrRecord,
@@ -19,7 +20,6 @@ export type {
   OAIMetadataFormat,
   OAIRecord,
   OAIRecordHeader,
-  OAIRecordMetadata,
   OAIRepositoryDescription,
   OAISet,
 } from "./oai_pmh_parser/parser.model.ts";
