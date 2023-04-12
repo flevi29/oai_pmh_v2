@@ -28,7 +28,7 @@ await build({
       url: "https://github.com/flevi29/oai_pmh_v2/issues",
     },
     homepage: "https://github.com/flevi29/oai_pmh_v2#readme",
-    devDependencies: { "@types/node": "^18.13.0" },
+    devDependencies: { "@types/node": "^18.15.11" },
   },
   compilerOptions: {
     target: "Latest",

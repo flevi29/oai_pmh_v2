@@ -1,1 +1,1 @@
-export { XMLParser } from "npm:fast-xml-parser@^4.1.2";
+export { XMLParser } from "npm:fast-xml-parser@^4.2.0";

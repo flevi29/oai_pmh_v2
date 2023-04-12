@@ -56,7 +56,7 @@ for await (
 }
 ```
 
-[//]: # (@TODO Talk about MaybeArr, cause metadata no more)
+[//]: # (@TODO Talk about issue with abort controller)
 
 > **Warning** Arrays require special attention because in XML there's no
 > distinction between single element array property or just a property with that

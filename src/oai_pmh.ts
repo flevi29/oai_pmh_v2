@@ -153,6 +153,8 @@ export class OAIPMH {
     return this.#callFnAndWrapError(this.#parser.parseListSets, ...res);
   }
 
+  // @TODO: fetch combined with AbortController causes memory leak here
+  // https://github.com/nodejs/undici/issues/939
   async *#list<
     TCB extends OAIPMHParser["parseListIdentifiers" | "parseListRecords"],
     TReturn = ReturnType<TCB>["records"],
