@@ -13,12 +13,11 @@ await build({
   scriptModule: false,
   esModule: true,
   package: {
-    // package.json properties
     name: "oai_pmh_v2",
     version: denoJson.version,
     author: "Fodor Levente",
     license: "MIT",
-    description: "Deno and Node.js API module for OAI-PMH.",
+    description: "Node.js OAI-PMH client.",
     keywords: ["OAI-PMH", "oaipmh", "oai", "metadata", "harvest", "protocol"],
     repository: {
       type: "git",
@@ -28,15 +27,11 @@ await build({
       url: "https://github.com/flevi29/oai_pmh_v2/issues",
     },
     homepage: "https://github.com/flevi29/oai_pmh_v2#readme",
-    devDependencies: { "@types/node": "^18.15.11" },
+    devDependencies: { "@types/node": "^20.2.1" },
   },
-  compilerOptions: {
-    target: "Latest",
-    lib: ["dom"],
-  },
+  compilerOptions: { target: "ES2022" },
   packageManager: "pnpm",
 });
 
-// post build steps
 Deno.copyFileSync("LICENSE", "npm/LICENSE");
 Deno.copyFileSync("README.md", "npm/README.md");

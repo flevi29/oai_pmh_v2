@@ -230,6 +230,21 @@
     "https://deno.land/x/dnt@0.34.0/lib/utils.ts": "d13b5b3148a2c71e9b2f1c84c7be7393b825ae972505e23c2f6b1e5287e96b43",
     "https://deno.land/x/dnt@0.34.0/mod.ts": "3ee53f4d4d41df72e57ecbca9f3c2b7cf86166ef57fa04452865780f83c555a9",
     "https://deno.land/x/dnt@0.34.0/transform.ts": "1b127c5f22699c8ab2545b98aeca38c4e5c21405b0f5342ea17e9c46280ed277",
+    "https://deno.land/x/dnt@0.35.0/lib/compiler.ts": "3259975196f44391525e4e3e96c1f95c3a90dd25ec31a1948ccd7c6b71323d76",
+    "https://deno.land/x/dnt@0.35.0/lib/compiler_transforms.ts": "cbb1fd5948f5ced1aa5c5aed9e45134e2357ce1e7220924c1d7bded30dcd0dd0",
+    "https://deno.land/x/dnt@0.35.0/lib/mod.deps.ts": "30367fc68bcd2acf3b7020cf5cdd26f817f7ac9ac35c4bfb6c4551475f91bc3e",
+    "https://deno.land/x/dnt@0.35.0/lib/npm_ignore.ts": "b430caa1905b65ae89b119d84857b3ccc3cb783a53fc083d1970e442f791721d",
+    "https://deno.land/x/dnt@0.35.0/lib/package_json.ts": "2d629dbaef8004971e38ce3661f04b915a35342b905c3d98ff4a25343c2a8293",
+    "https://deno.land/x/dnt@0.35.0/lib/pkg/dnt_wasm.generated.js": "ad5c205f018b2bc6258d00d6a0539c2ffa94275f16f106f0f072bcf77f3c786b",
+    "https://deno.land/x/dnt@0.35.0/lib/pkg/snippets/dnt-wasm-a15ef721fa5290c5/helpers.js": "a6b95adc943a68d513fe8ed9ec7d260ac466b7a4bced4e942f733e494bb9f1be",
+    "https://deno.land/x/dnt@0.35.0/lib/shims.ts": "d12e2c3c70eab1b0b95c46f35771f9798d7be7b3b6d0af6b82cad068d26d746f",
+    "https://deno.land/x/dnt@0.35.0/lib/test_runner/get_test_runner_code.ts": "2a4e26aa33120f3cc9e03b8538211a5047a4bad4c64e895944b87f2dcd55d904",
+    "https://deno.land/x/dnt@0.35.0/lib/test_runner/test_runner.ts": "b91d77d9d4b82984cb2ba7431ba6935756ba72f62e7dd4db22cd47a680ebd952",
+    "https://deno.land/x/dnt@0.35.0/lib/transform.deps.ts": "e42f2bdef46d098453bdba19261a67cf90b583f5d868f7fe83113c1380d9b85c",
+    "https://deno.land/x/dnt@0.35.0/lib/types.ts": "5735f10d9f1ff741dd3a5518b46365a38bc6e037fc0996d5bcaf2d6e8c2f805b",
+    "https://deno.land/x/dnt@0.35.0/lib/utils.ts": "878b7ac7003a10c16e6061aa49dbef9b42bd43174853ebffc9b67ea47eeb11d8",
+    "https://deno.land/x/dnt@0.35.0/mod.ts": "3ee53f4d4d41df72e57ecbca9f3c2b7cf86166ef57fa04452865780f83c555a9",
+    "https://deno.land/x/dnt@0.35.0/transform.ts": "1b127c5f22699c8ab2545b98aeca38c4e5c21405b0f5342ea17e9c46280ed277",
     "https://deno.land/x/ts_morph@17.0.1/bootstrap/mod.ts": "b53aad517f106c4079971fcd4a81ab79fadc40b50061a3ab2b741a09119d51e9",
     "https://deno.land/x/ts_morph@17.0.1/bootstrap/ts_morph_bootstrap.d.ts": "607e651c5ae5aa57c2ac4090759a6379e809c0cdc42114742ac67353b1a75038",
     "https://deno.land/x/ts_morph@17.0.1/bootstrap/ts_morph_bootstrap.js": "91a954daa993c5acb3361aa5279394f81ea6fe18b3854345c86111b336491cfc",
@@ -255,7 +270,8 @@
       "fast-xml-parser@^4.0.12": "fast-xml-parser@4.0.12",
       "fast-xml-parser@^4.0.13": "fast-xml-parser@4.0.13",
       "fast-xml-parser@^4.1.1": "fast-xml-parser@4.1.1",
-      "fast-xml-parser@^4.1.2": "fast-xml-parser@4.1.2"
+      "fast-xml-parser@^4.1.2": "fast-xml-parser@4.1.2",
+      "fast-xml-parser@^4.2.2": "fast-xml-parser@4.2.2"
     },
     "packages": {
       "fast-xml-parser@4.0.11": {
@@ -284,6 +300,12 @@
       },
       "fast-xml-parser@4.1.2": {
         "integrity": "sha512-CDYeykkle1LiA/uqQyNwYpFbyF6Axec6YapmpUP+/RHWIoR1zKjocdvNaTsxCxZzQ6v9MLXaSYm9Qq0thv0DHg==",
+        "dependencies": {
+          "strnum": "strnum@1.0.5"
+        }
+      },
+      "fast-xml-parser@4.2.2": {
+        "integrity": "sha512-DLzIPtQqmvmdq3VUKR7T6omPK/VCRNqgFlGtbESfyhcH2R4I8EzK1/K6E8PkRCK2EabWrUHK32NjYRbEFnnz0Q==",
         "dependencies": {
           "strnum": "strnum@1.0.5"
         }
