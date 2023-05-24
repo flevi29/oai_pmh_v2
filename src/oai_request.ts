@@ -77,10 +77,10 @@ export class OAIRequest {
           signal: options?.signal,
           headers: this.#userAgent,
           credentials: "omit",
+          // @ts-ignore: No cache in undici type definitions
           cache: "no-store",
         },
       );
-      // @TODO: @ts-ignore: No cache in undici type definitions
       await checkResponse(response);
       return [await response.text(), response];
     } catch (error: unknown) {

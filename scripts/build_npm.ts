@@ -6,10 +6,10 @@ await emptyDir("./npm");
 await build({
   entryPoints: ["./src/mod.ts"],
   outDir: "./npm",
-  shims: { undici: true },
-  typeCheck: true,
+  shims: {},
+  typeCheck: "single",
   test: false,
-  declaration: true,
+  declaration: "separate",
   scriptModule: false,
   esModule: true,
   package: {
@@ -27,9 +27,10 @@ await build({
       url: "https://github.com/flevi29/oai_pmh_v2/issues",
     },
     homepage: "https://github.com/flevi29/oai_pmh_v2#readme",
-    devDependencies: { "@types/node": "^20.2.1" },
+    devDependencies: { "@types/node": "^20.2.3" },
   },
-  compilerOptions: { target: "ES2022" },
+  // DOM is required for fetch API to type check properly
+  compilerOptions: { target: "ES2022", lib: ["DOM"] },
   packageManager: "pnpm",
 });
 

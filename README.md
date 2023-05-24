@@ -20,10 +20,9 @@ npm i oai_pmh_v2
 
 ```typescript
 // Node.js
-import { MaybeArr, OAIPMH, OAIPMHParser } from "oai_pmh_v2";
+import { OAIPMH, OAIPMHParser } from "oai_pmh_v2";
 // Deno
 import {
-  MaybeArr,
   OAIPMH,
   OAIPMHParser,
 } from "https://deno.land/x/oai_pmh_v2/src/mod.ts";
@@ -35,23 +34,18 @@ const oaiPmh = new OAIPMH({
     "http://bibliotecavirtual.asturias.es/i18n/oai/oai_bibliotecavirtual.asturias.es.cmd",
 });
 
-const info = await oaiPmh.identify({ signal: AbortSignal.timeout(20000) });
+const info = await oaiPmh.identify({ signal: AbortSignal.timeout(17000) });
 
 console.log(info);
 
 for await (
-  const records of oaiPmh.listRecords<
-    {
-      Define: "the structure of";
-      your: "records";
-      like: { so: "!"; Otherwise: { "they're of type": [unknown, "."] } };
-      Use: MaybeArr<" to define arrays">;
-    }
-  >(
+  const records of oaiPmh.listRecords(
     { metadataPrefix: "marc21" },
     { signal: AbortSignal.timeout(17000) },
   )
 ) {
+  // if records.metadata is not undefined, then it should be cast
+  // as expected type or better yet validated via for example a zod schema
   console.log(records);
 }
 ```
@@ -60,8 +54,7 @@ for await (
 
 > **Warning** Arrays require special attention because in XML there's no
 > distinction between single element array property or just a property with that
-> element. Properties of type `T[]` should be defined as `T | T[]` (import
-> `MaybeArr` utility type for convenience), and always checked with
+> element. Properties of type `T[]` should be defined as `T | T[]`, and always checked with
 > [`Array.isArray()`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/isArray),
 > unless absolutely sure the array is always of length 2 or greater.
 
