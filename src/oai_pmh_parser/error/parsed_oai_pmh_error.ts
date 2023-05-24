@@ -1,4 +1,4 @@
-import { OAIErrorCode } from "./parser.model.ts";
+import { OAIErrorCode } from "../parser.model.ts";
 
 export class ParsedOAIPMHError extends Error {
   readonly #code: OAIErrorCode;

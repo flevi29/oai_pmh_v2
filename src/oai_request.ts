@@ -62,14 +62,14 @@ export class OAIRequest {
   ) {
     const { baseUrl, userAgent } = options;
     this.#baseURL = this.#coerceAndCheckURL(baseUrl);
-    this.#userAgent = { "User-Agent": userAgent || "oai_pmh_v2" };
+    this.#userAgent = { "User-Agent": userAgent || "oai_pmh_v2_js_client" };
     this.#debugLogRetries = options?.debugLogRetries ?? false;
   }
 
-  async request(
+  request = async (
     searchParams: Record<string, string | undefined>,
     options?: RequestOptions,
-  ): Promise<[xml: string, response: Response]> {
+  ): Promise<[xml: string, response: Response]> => {
     try {
       const response = await fetch(
         getURLWithParameters(this.#baseURL, searchParams),
@@ -77,10 +77,10 @@ export class OAIRequest {
           signal: options?.signal,
           headers: this.#userAgent,
           credentials: "omit",
-          // @ts-ignore: No cache in undici type definitions
           cache: "no-store",
         },
       );
+      // @TODO: @ts-ignore: No cache in undici type definitions
       await checkResponse(response);
       return [await response.text(), response];
     } catch (error: unknown) {
@@ -108,5 +108,5 @@ export class OAIRequest {
         retry: retry - 1,
       });
     }
-  }
+  };
 }

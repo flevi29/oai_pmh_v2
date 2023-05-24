@@ -2,16 +2,22 @@ import { OAIRequest } from "./oai_request.ts";
 import { OAIPMHError } from "./oai_pmh_error.ts";
 import { OAIPMHParser } from "./oai_pmh_parser/oai_pmh_parser.ts";
 import { ListOptions, RequestOptions } from "./oai_pmh.model.ts";
-import { OAIMaybeArrRecord, OAIRecord } from "./oai_pmh_parser/parser.model.ts";
 
 export class OAIPMH {
   readonly #request: OAIRequest["request"];
   readonly #parser: OAIPMHParser;
 
-  constructor(...oaiRequestOptions: ConstructorParameters<typeof OAIRequest>) {
-    const oaiRequest = new OAIRequest(...oaiRequestOptions);
-    this.#request = oaiRequest.request.bind(oaiRequest);
+  constructor(...requestOptions: ConstructorParameters<typeof OAIRequest>) {
+    this.#request = new OAIRequest(...requestOptions).request;
     this.#parser = new OAIPMHParser();
+  }
+
+  disableEmptyTagsFix() {
+    this.#parser.disableEmptyTagsFix();
+  }
+
+  enableEmptyTagsFix() {
+    this.#parser.enableEmptyTagsFix();
   }
 
   // deno-lint-ignore no-explicit-any
@@ -24,12 +30,7 @@ export class OAIPMH {
       return parserFn(xml);
     } catch (error: unknown) {
       throw new OAIPMHError(
-        typeof error === "object" && error !== null &&
-          Object.hasOwn(error, "message")
-          // https://github.com/microsoft/TypeScript/issues/44253
-          // deno-lint-ignore no-explicit-any
-          ? (<any> error).message
-          : error,
+        typeof error === "string" ? error : JSON.stringify(error),
         { response, cause: error },
       );
     }
@@ -40,7 +41,7 @@ export class OAIPMH {
     return this.#callFnAndWrapError(this.#parser.parseIdentify, ...res);
   }
 
-  async getRecord<TReturn = unknown>(
+  async getRecord(
     identifier: string,
     metadataPrefix: string,
     requestOptions?: RequestOptions,
@@ -50,7 +51,7 @@ export class OAIPMH {
       identifier,
       metadataPrefix,
     }, requestOptions);
-    return <OAIRecord<TReturn>> this.#callFnAndWrapError(
+    return this.#callFnAndWrapError(
       this.#parser.parseGetRecord,
       ...res,
     );
@@ -76,6 +77,7 @@ export class OAIPMH {
   }
 
   // @TODO: fetch combined with AbortController causes memory leak here
+  // (apparently on all platforms, fetch API issue)
   // https://github.com/nodejs/undici/issues/939
   async *#list<
     TCB extends OAIPMHParser["parseListIdentifiers" | "parseListRecords"],
@@ -83,9 +85,9 @@ export class OAIPMH {
   >(
     parseListCallback: TCB,
     verb: "ListIdentifiers" | "ListRecords",
-    options: { listOptions: ListOptions; requestOptions?: RequestOptions },
+    listOptions: ListOptions,
+    requestOptions?: RequestOptions,
   ) {
-    const { listOptions, requestOptions } = options;
     const resp = await this.#request(
       { ...listOptions, verb },
       requestOptions,
@@ -104,23 +106,20 @@ export class OAIPMH {
   }
 
   listIdentifiers(listOptions: ListOptions, requestOptions?: RequestOptions) {
-    return this.#list<OAIPMHParser["parseListIdentifiers"]>(
+    return this.#list(
       this.#parser.parseListIdentifiers,
       "ListIdentifiers",
-      { listOptions, requestOptions },
+      listOptions,
+      requestOptions,
     );
   }
 
-  listRecords<TReturn = unknown>(
-    listOptions: ListOptions,
-    requestOptions?: RequestOptions,
-  ) {
-    return this.#list<
-      OAIPMHParser["parseListRecords"],
-      OAIMaybeArrRecord<TReturn>
-    >(this.#parser.parseListRecords, "ListRecords", {
+  listRecords(listOptions: ListOptions, requestOptions?: RequestOptions) {
+    return this.#list(
+      this.#parser.parseListRecords,
+      "ListRecords",
       listOptions,
       requestOptions,
-    });
+    );
   }
 }
