@@ -37,9 +37,7 @@ const OAI_RECORD_HEADER = z.strictObject({
   identifier: SIMPLE_TEXT_OBJ,
   datestamp: SIMPLE_TEXT_OBJ,
   setSpec: SIMPLE_TEXT_OBJ.array().or(SIMPLE_TEXT_OBJ).optional(),
-  "@_status": z.strictObject({
-    "#text": z.literal("deleted"),
-  }).optional(),
+  "@_status": z.literal("deleted").optional(),
 });
 type OAIRecordHeader = z.infer<typeof OAI_RECORD_HEADER>;
 const OAI_RECORD_HEADER_MAYBE_ARR = OAI_RECORD_HEADER.array().or(
