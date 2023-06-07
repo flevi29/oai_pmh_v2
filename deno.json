@@ -1,5 +1,5 @@
 {
-  "version": "0.6.1",
+  "version": "0.6.2",
   "tasks": {
     "build:npm": "deno run --allow-env --allow-read --allow-write --allow-net --allow-run scripts/build_npm.ts"
   }
