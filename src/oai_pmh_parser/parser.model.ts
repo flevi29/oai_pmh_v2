@@ -76,23 +76,20 @@ type OAISet = z.infer<typeof OAI_SET>;
 const OAI_SET_MAYBE_ARR = OAI_SET.array().or(OAI_SET);
 type OAISetMaybeArr = z.infer<typeof OAI_SET_MAYBE_ARR>;
 
-// @TODO: include schemas?
-const IDENTIFY = z.object({ Identify: OAI_REPOSITORY_DESCRIPTION });
+// @TODO: include xsd items?
 const GET_RECORD = z.object({
   GetRecord: z.strictObject({ record: OAI_RECORD }),
 });
-const LIST_METADATA_FORMATS = z.object({
-  ListMetadataFormats: z.strictObject({
-    metadataFormat: OAI_METADATA_FORMAT_MAYBE_ARR,
-  }),
-});
-const LIST_SETS = z.object({
-  ListSets: z.strictObject({ set: OAI_SET_MAYBE_ARR }),
-});
+const IDENTIFY = z.object({ Identify: OAI_REPOSITORY_DESCRIPTION });
 const LIST_IDENTIFIERS = z.object({
   ListIdentifiers: z.strictObject({
     header: OAI_RECORD_HEADER_MAYBE_ARR,
     resumptionToken: OAI_RESUMPTION_TOKEN.optional(),
+  }),
+});
+const LIST_METADATA_FORMATS = z.object({
+  ListMetadataFormats: z.strictObject({
+    metadataFormat: OAI_METADATA_FORMAT_MAYBE_ARR,
   }),
 });
 const LIST_RECORDS = z.object({
@@ -101,17 +98,24 @@ const LIST_RECORDS = z.object({
     resumptionToken: OAI_RESUMPTION_TOKEN.optional(),
   }),
 });
+const LIST_SETS = z.object({
+  ListSets: z.strictObject({
+    set: OAI_SET_MAYBE_ARR,
+    resumptionToken: OAI_RESUMPTION_TOKEN.optional(),
+  }),
+});
 type ResumptionTokenResponses =
   | z.infer<typeof LIST_IDENTIFIERS>["ListIdentifiers"]
-  | z.infer<typeof LIST_RECORDS>["ListRecords"];
+  | z.infer<typeof LIST_RECORDS>["ListRecords"]
+  | z.infer<typeof LIST_SETS>["ListSets"];
 
 const OAI_BASE_OBJ = z.union([
-  IDENTIFY,
   GET_RECORD,
-  LIST_METADATA_FORMATS,
-  LIST_SETS,
+  IDENTIFY,
   LIST_IDENTIFIERS,
+  LIST_METADATA_FORMATS,
   LIST_RECORDS,
+  LIST_SETS,
 ]);
 type OAIBaseObj = z.infer<typeof OAI_BASE_OBJ>;
 

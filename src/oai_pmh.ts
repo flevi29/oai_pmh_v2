@@ -57,36 +57,19 @@ export class OAIPMH {
     );
   }
 
-  async listMetadataFormats(
-    identifier?: string,
-    requestOptions?: RequestOptions,
-  ) {
-    const res = await this.#request(
-      { verb: "ListMetadataFormats", identifier },
-      requestOptions,
-    );
-    return this.#callFnAndWrapError(
-      this.#parser.parseListMetadataFormats,
-      ...res,
-    );
-  }
-
-  async listSets(requestOptions?: RequestOptions) {
-    const res = await this.#request({ verb: "ListSets" }, requestOptions);
-    return this.#callFnAndWrapError(this.#parser.parseListSets, ...res);
-  }
-
   // @TODO: fetch combined with AbortController causes memory leak here
   // (apparently on all platforms, fetch API issue)
   // https://github.com/nodejs/undici/issues/939
   async *#list<
-    TCB extends OAIPMHParser["parseListIdentifiers" | "parseListRecords"],
+    TCB extends OAIPMHParser[
+      "parseListSets" | "parseListIdentifiers" | "parseListRecords"
+    ],
     TReturn = ReturnType<TCB>["records"],
   >(
     parseListCallback: TCB,
-    verb: "ListIdentifiers" | "ListRecords",
-    listOptions: ListOptions,
+    verb: "ListSets" | "ListIdentifiers" | "ListRecords",
     requestOptions?: RequestOptions,
+    listOptions?: ListOptions,
   ) {
     const resp = await this.#request(
       { ...listOptions, verb },
@@ -109,8 +92,22 @@ export class OAIPMH {
     return this.#list(
       this.#parser.parseListIdentifiers,
       "ListIdentifiers",
-      listOptions,
       requestOptions,
+      listOptions,
+    );
+  }
+
+  async listMetadataFormats(
+    identifier?: string,
+    requestOptions?: RequestOptions,
+  ) {
+    const res = await this.#request(
+      { verb: "ListMetadataFormats", identifier },
+      requestOptions,
+    );
+    return this.#callFnAndWrapError(
+      this.#parser.parseListMetadataFormats,
+      ...res,
     );
   }
 
@@ -118,8 +115,12 @@ export class OAIPMH {
     return this.#list(
       this.#parser.parseListRecords,
       "ListRecords",
-      listOptions,
       requestOptions,
+      listOptions,
     );
+  }
+
+  listSets(requestOptions?: RequestOptions) {
+    return this.#list(this.#parser.parseListSets, "ListSets", requestOptions);
   }
 }

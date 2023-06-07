@@ -100,26 +100,6 @@ export class OAIPMHParser {
     return parsedXml.GetRecord.record;
   };
 
-  parseListMetadataFormats = (xml: string) => {
-    const parsedXml = this.#parseOaiPmhXml(xml);
-    if (!hasOwn(parsedXml, "ListMetadataFormats")) {
-      throw new NonConformingError(
-        new ExpectedKeyError("ListMetadataFormats", parsedXml),
-      );
-    }
-    return parsedXml.ListMetadataFormats.metadataFormat;
-  };
-
-  parseListSets = (xml: string) => {
-    const parsedXml = this.#parseOaiPmhXml(xml);
-    if (!hasOwn(parsedXml, "ListSets")) {
-      throw new NonConformingError(
-        new ExpectedKeyError("ListSets", parsedXml),
-      );
-    }
-    return parsedXml.ListSets.set;
-  };
-
   #parseResumptionToken(
     parsedVerb: ResumptionTokenResponses,
   ) {
@@ -140,6 +120,16 @@ export class OAIPMHParser {
     };
   };
 
+  parseListMetadataFormats = (xml: string) => {
+    const parsedXml = this.#parseOaiPmhXml(xml);
+    if (!hasOwn(parsedXml, "ListMetadataFormats")) {
+      throw new NonConformingError(
+        new ExpectedKeyError("ListMetadataFormats", parsedXml),
+      );
+    }
+    return parsedXml.ListMetadataFormats.metadataFormat;
+  };
+
   parseListRecords = (xml: string) => {
     const parsedXml = this.#parseOaiPmhXml(xml);
     if (!hasOwn(parsedXml, "ListRecords")) {
@@ -151,6 +141,20 @@ export class OAIPMHParser {
     return {
       records: ListRecords.record,
       resumptionToken: this.#parseResumptionToken(ListRecords),
+    };
+  };
+
+  parseListSets = (xml: string) => {
+    const parsedXml = this.#parseOaiPmhXml(xml);
+    if (!hasOwn(parsedXml, "ListSets")) {
+      throw new NonConformingError(
+        new ExpectedKeyError("ListSets", parsedXml),
+      );
+    }
+    const { ListSets } = parsedXml;
+    return {
+      records: parsedXml.ListSets.set,
+      resumptionToken: this.#parseResumptionToken(ListSets),
     };
   };
 }

@@ -297,7 +297,8 @@
       "fast-xml-parser@^4.1.1": "fast-xml-parser@4.1.1",
       "fast-xml-parser@^4.1.2": "fast-xml-parser@4.1.2",
       "fast-xml-parser@^4.2.2": "fast-xml-parser@4.2.2",
-      "zod@^3.16.1": "zod@3.21.4"
+      "zod@^3.16.1": "zod@3.21.4",
+      "zod@^3.21.4": "zod@3.21.4"
     },
     "packages": {
       "fast-xml-parser@4.0.11": {
