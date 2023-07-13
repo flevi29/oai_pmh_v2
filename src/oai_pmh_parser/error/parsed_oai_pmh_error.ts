@@ -1,20 +1,15 @@
-import { OAIErrorCode } from "../parser.model.ts";
+import { OAIPMHErrorCode, OAIPMHErrorResponse } from "../model/oai.ts";
 
 export class ParsedOAIPMHError extends Error {
-  readonly #code: OAIErrorCode;
-  get code() {
-    return this.#code;
+  readonly #returnedErrors: { code: OAIPMHErrorCode; text?: string }[];
+  get returnedErrors() {
+    return this.#returnedErrors;
   }
 
-  readonly #text?: string;
-  get text() {
-    return this.#text;
-  }
-
-  constructor(message: string, code: OAIErrorCode, text?: string) {
-    super(message);
+  constructor(error: OAIPMHErrorResponse) {
+    super("OAI-PMH provider returned error(s)");
     this.name = ParsedOAIPMHError.name;
-    this.#code = code;
-    this.#text = text;
+
+    this.#returnedErrors = error.map((v) => ({ code: v.attr["@_code"], text: v.val }));
   }
 }

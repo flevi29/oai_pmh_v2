@@ -1,23 +1,19 @@
-import { OAIRequest } from "./oai_request.ts";
+import { OAIPMHRequest } from "./oai_pmh_request.ts";
 import { OAIPMHError } from "./oai_pmh_error.ts";
 import { OAIPMHParser } from "./oai_pmh_parser/oai_pmh_parser.ts";
-import { ListOptions, RequestOptions } from "./oai_pmh.model.ts";
+import {
+  ListOptions,
+  OAIPMHRequestConstructorOptions,
+  RequestOptions,
+} from "./oai_pmh.model.ts";
 
 export class OAIPMH {
-  readonly #request: OAIRequest["request"];
+  readonly #request: OAIPMHRequest["request"];
   readonly #parser: OAIPMHParser;
 
-  constructor(...requestOptions: ConstructorParameters<typeof OAIRequest>) {
-    this.#request = new OAIRequest(...requestOptions).request;
+  constructor(options: OAIPMHRequestConstructorOptions) {
+    this.#request = new OAIPMHRequest(options).request;
     this.#parser = new OAIPMHParser();
-  }
-
-  disableEmptyTagsFix() {
-    this.#parser.disableEmptyTagsFix();
-  }
-
-  enableEmptyTagsFix() {
-    this.#parser.enableEmptyTagsFix();
   }
 
   // deno-lint-ignore no-explicit-any
@@ -46,23 +42,27 @@ export class OAIPMH {
     metadataPrefix: string,
     requestOptions?: RequestOptions,
   ) {
-    const res = await this.#request({
-      verb: "GetRecord",
-      identifier,
-      metadataPrefix,
-    }, requestOptions);
-    return this.#callFnAndWrapError(
-      this.#parser.parseGetRecord,
-      ...res,
+    const res = await this.#request(
+      {
+        verb: "GetRecord",
+        identifier,
+        metadataPrefix,
+      },
+      requestOptions,
     );
+    return this.#callFnAndWrapError(this.#parser.parseGetRecord, ...res);
   }
 
-  // @TODO: fetch combined with AbortController causes memory leak here
-  // (apparently on all platforms, fetch API issue)
-  // https://github.com/nodejs/undici/issues/939
+  // @TODO: fetch combined with AbortController causes minor memory leak here
+  //        but more importantly lots of annoying warnings
+  //        (allegedly on all platforms)
+  //        https://github.com/nodejs/undici/issues/939
+  //        Potential fix for Node.js https://nodejs.org/api/util.html#utilabortedsignal-resource
   async *#list<
     TCB extends OAIPMHParser[
-      "parseListSets" | "parseListIdentifiers" | "parseListRecords"
+      | "parseListSets"
+      | "parseListIdentifiers"
+      | "parseListRecords"
     ],
     TReturn = ReturnType<TCB>["records"],
   >(
@@ -71,10 +71,7 @@ export class OAIPMH {
     requestOptions?: RequestOptions,
     listOptions?: ListOptions,
   ) {
-    const resp = await this.#request(
-      { ...listOptions, verb },
-      requestOptions,
-    );
+    const resp = await this.#request({ ...listOptions, verb }, requestOptions);
     let next = this.#callFnAndWrapError(parseListCallback, ...resp);
     yield next.records as TReturn;
 

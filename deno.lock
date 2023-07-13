@@ -316,6 +316,7 @@
       "fast-xml-parser@^4.1.2": "fast-xml-parser@4.1.2",
       "fast-xml-parser@^4.2.2": "fast-xml-parser@4.2.2",
       "fast-xml-parser@^4.2.4": "fast-xml-parser@4.2.4",
+      "fast-xml-parser@^4.2.5": "fast-xml-parser@4.2.5",
       "zod@^3.16.1": "zod@3.21.4",
       "zod@^3.21.4": "zod@3.21.4"
     },
@@ -358,6 +359,12 @@
       },
       "fast-xml-parser@4.2.4": {
         "integrity": "sha512-fbfMDvgBNIdDJLdLOwacjFAPYt67tr31H9ZhWSm45CDAxvd0I6WTlSOUo7K2P/K5sA5JgMKG64PI3DMcaFdWpQ==",
+        "dependencies": {
+          "strnum": "strnum@1.0.5"
+        }
+      },
+      "fast-xml-parser@4.2.5": {
+        "integrity": "sha512-B9/wizE4WngqQftFPmdaMYlXoJlJOYxGQOanC77fq9k8+Z0v5dDSVh+3glErdIROP//s/jgb7ZuxKfB8nVyo0g==",
         "dependencies": {
           "strnum": "strnum@1.0.5"
         }

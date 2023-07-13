@@ -7,19 +7,17 @@ export { ParsedOAIPMHError } from "./oai_pmh_parser/error/parsed_oai_pmh_error.t
 
 export type {
   ListOptions,
-  OAIPMHOptionsConstructor,
+  OAIPMHRequestConstructorOptions,
   RequestOptions,
 } from "./oai_pmh.model.ts";
 
 export type {
-  OAIErrorCode,
-  OAIMetadataFormat,
-  OAIMetadataFormatMaybeArr,
-  OAIRecord,
-  OAIRecordHeader,
-  OAIRecordHeaderMaybeArr,
-  OAIRecordMaybeArr,
-  OAIRepositoryDescription,
-  OAISet,
-  OAISetMaybeArr,
-} from "./oai_pmh_parser/parser.model.ts";
+  TransformedParsedXML,
+  TransformedParsedXMLValue,
+} from "./oai_pmh_parser/model/transform.ts";
+export type { OAIPMHErrorCode } from "./oai_pmh_parser/model/oai.ts";
+export type { OAIPMHMetadataFormat } from "./oai_pmh_parser/model/metadata_format.ts";
+export type { OAIPMHRecord } from "./oai_pmh_parser/model/record.ts";
+export type { OAIPMHHeader } from "./oai_pmh_parser/model/header.ts";
+export type { OAIPMHIdentify } from "./oai_pmh_parser/model/identify.ts";
+export type { OAIPMHSet } from "./oai_pmh_parser/model/set.ts";

@@ -1,70 +1,92 @@
+# OAI-PMH TypeScript client
+
 [![Version][npm-svg]][npm-url] [![Deno][deno-svg]][deno-url]
 
-## What is this?
-
-It's a "_blazingly fast_"
+It's an
 [OAI-PMH Version 2.0](https://www.openarchives.org/OAI/openarchivesprotocol.html)
-API client module for Node.js and Deno.
+API client package/module for Node.js and Deno.
 
-### Install for Node.js
+## Installing (Node.js)
 
 ```sh
 npm i oai_pmh_v2
 ```
 
-> **Note** For Node.js users this is an ESM only module. Read more
+> **Note** This is an ESM only package, read more
 > [here](https://www.typescriptlang.org/docs/handbook/esm-node.html) and maybe
 > [here](https://gist.github.com/sindresorhus/a39789f98801d908bbc7ff3ecc99d99c).
 
-### Example
+## Example
 
 ```typescript
 // Node.js
-import { OAIPMH, OAIPMHParser } from "oai_pmh_v2";
+import { OAIPMH, OAIPMHError, ParsedOAIPMHError } from "oai_pmh_v2";
 // Deno
 import {
   OAIPMH,
-  OAIPMHParser,
+  OAIPMHError,
+  ParsedOAIPMHError,
 } from "https://deno.land/x/oai_pmh_v2/src/mod.ts";
 
 // You can find OAI-PMH providers here (although a lot of them might be non functional):
 // https://www.openarchives.org/Register/BrowseSites
-const oaiPmh = new OAIPMH({
+const oaiPMH = new OAIPMH({
   baseUrl:
     "http://bibliotecavirtual.asturias.es/i18n/oai/oai_bibliotecavirtual.asturias.es.cmd",
 });
 
-const info = await oaiPmh.identify({ signal: AbortSignal.timeout(17000) });
+try {
+  for await (
+    const values of oaiPMH.listIdentifiers(
+      { metadataPrefix: "marc21", from: "2015-08-03", until: "2016-05-30" },
+      { signal: AbortSignal.timeout(20_000) },
+    )
+  ) {
+    console.log(JSON.stringify(values));
+  }
 
-console.log(info);
+  const info = await oaiPMH.identify();
 
-for await (
-  const records of oaiPmh.listRecords(
-    { metadataPrefix: "marc21" },
-    { signal: AbortSignal.timeout(17000) },
-  )
-) {
-  // if records.metadata is not undefined, then it should be cast
-  // as expected type or better yet validated via for example a zod schema
-  console.log(records);
+  console.log(info);
+} catch (error: unknown) {
+  console.error(error);
+  if (
+    error instanceof OAIPMHError && error.cause instanceof ParsedOAIPMHError
+  ) {
+    // This means there are specific errors returned by the OAI-PMH provider
+    for (const returnedError of error.cause.returnedErrors) {
+      console.error(returnedError);
+    }
+  }
 }
 ```
 
-[//]: # (@TODO Talk about issue with abort controller)
+> **Warning** When using an `AbortSignal` with any list method
+> (`listIdentifiers`, `listRecords`, `listSets`), there will be some memory leak
+> until the loop exits. This is because for each request there is an additional
+> listener registered for the signal. Specifically in Node.js this will cause a
+> lot of warnings. This is a fetch API limitation,
+> [issue](https://github.com/nodejs/undici/issues/939).
 
-> **Warning** Arrays require special attention because in XML there's no
-> distinction between single element array property or just a property with that
-> element. Properties of type `T[]` should be defined as `T | T[]`, and always checked with
-> [`Array.isArray()`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/isArray),
-> unless absolutely sure the array is always of length 2 or greater.
+## General shape of parsed data
 
-> **Note** Parsed
-> [XML attributes](https://www.w3schools.com/xml/xml_attributes.asp) are
-> prefixed with `@_`, while XML text is parsed into `#text` property.
+```typescript
+type TransformedParsedXMLValue = {
+  // index in XML tree branch, for preserving order of elements
+  i: number;
+  // XML attributes
+  attr?: Record<string, string>;
+  // either a text value, another branch of the XML tree,
+  // or undefined in case of an empty XML element
+  val?: string | TransformedParsedXML;
+};
+
+type TransformedParsedXML = Record<string, TransformedParsedXMLValue[]>;
+```
 
 Find examples for all methods in
 [examples directory](https://github.com/flevi29/oai_pmh_v2/tree/main/examples).
-Some things are only documented via types for now.
+Documentation via types.
 
 [npm-svg]: https://img.shields.io/npm/v/oai_pmh_v2.svg?style=flat-square
 [npm-url]: https://npmjs.org/package/oai_pmh_v2

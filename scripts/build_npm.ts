@@ -27,7 +27,7 @@ await build({
       url: "https://github.com/flevi29/oai_pmh_v2/issues",
     },
     homepage: "https://github.com/flevi29/oai_pmh_v2#readme",
-    devDependencies: { "@types/node": "^20.2.5" },
+    devDependencies: { "@types/node": "^20.4.1" },
   },
   // DOM is required for fetch API to type check properly
   compilerOptions: { target: "ES2022", lib: ["DOM"] },

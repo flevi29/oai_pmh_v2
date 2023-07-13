@@ -2,11 +2,8 @@ import { XMLParser } from "../../deps.ts";
 import { NonConformingError } from "./error/non_conforming_error.ts";
 import { ExpectedKeyError } from "./error/expected_key_error.ts";
 import { ParsedOAIPMHError } from "./error/parsed_oai_pmh_error.ts";
-import {
-  OAI_RESPONSE,
-  OAIBaseObj,
-  ResumptionTokenResponses,
-} from "./parser.model.ts";
+import { validateAndTransform } from "./model/transform.ts";
+import { ResumptionTokenResponse } from "./model/oai.ts";
 
 // https://github.com/microsoft/TypeScript/issues/44253
 /** Extract from T those types that has K keys  */
@@ -18,6 +15,8 @@ type ExtractByKey<T, K extends keyof any> = T extends infer R
 
 type KeyofUnion<T> = T extends infer R ? keyof R : never;
 
+// @TODO: Make this type apply globally rather than from a function, and make sure the
+//        type is not included in
 // deno-lint-ignore no-explicit-any
 function hasOwn<T extends Record<keyof any, any>, K extends keyof any>(
   o: T,
@@ -27,134 +26,94 @@ function hasOwn<T extends Record<keyof any, any>, K extends keyof any>(
   return Object.hasOwn(o, v);
 }
 
+function parseResumptionToken(parsedVerb: ResumptionTokenResponse) {
+  return parsedVerb[0].val?.resumptionToken?.[0].val ?? null;
+}
+
 export class OAIPMHParser {
   // https://github.com/NaturalIntelligence/fast-xml-parser/blob/master/docs/v4/2.XMLparseOptions.md
-  #xmlParser: XMLParser;
+  readonly #xmlParser = new XMLParser({
+    preserveOrder: true,
+    ignoreDeclaration: true,
+    ignoreAttributes: false,
+    parseTagValue: false,
+  });
 
-  #createParser(applyEmptyTagsFix: boolean) {
-    const options: ConstructorParameters<typeof XMLParser> = [{
-      alwaysCreateTextNode: true,
-      ignoreDeclaration: true,
-      ignoreAttributes: false,
-      parseAttributeValue: false,
-      trimValues: true,
-      processEntities: true,
-      parseTagValue: false,
-    }];
-    // some providers might send empty tags, which is non-compliant
-    if (applyEmptyTagsFix) {
-      options[0]!.updateTag = (_, jPath) => jPath.at(-1) !== "/";
-    }
-    return new XMLParser(...options);
-  }
-
-  constructor() {
-    this.#xmlParser = this.#createParser(false);
-  }
-
-  disableEmptyTagsFix() {
-    this.#xmlParser = this.#createParser(false);
-  }
-
-  enableEmptyTagsFix() {
-    this.#xmlParser = this.#createParser(true);
-  }
-
-  #parseOaiPmhXml(xml: string): OAIBaseObj {
-    const parsedXml = this.#xmlParser.parse(xml);
-    const obj = OAI_RESPONSE.safeParse(parsedXml);
-    if (!obj.success) {
-      throw new NonConformingError(obj.error);
-    }
-    const oaiResponse = obj.data["OAI-PMH"];
+  #parseOAIPMHXML(xml: string) {
+    const parsedXML = this.#xmlParser.parse(xml);
+    const validatedAndTransformedXML = validateAndTransform(parsedXML);
+    const oaiResponse = validatedAndTransformedXML["OAI-PMH"][0].val;
     if (hasOwn(oaiResponse, "error")) {
-      const { error: { "#text": text, "@_code": code } } = oaiResponse;
-      throw new ParsedOAIPMHError(
-        `OAI-PMH provider returned an error:${
-          text !== undefined ? `\n\ttext: ${text}` : ""
-        }\n\tcode: ${code}`,
-        code,
-        text,
-      );
+      throw new ParsedOAIPMHError(oaiResponse.error);
     }
     return oaiResponse;
   }
 
   parseIdentify = (xml: string) => {
-    const parsedXml = this.#parseOaiPmhXml(xml);
-    if (!hasOwn(parsedXml, "Identify")) {
-      throw new NonConformingError(
-        new ExpectedKeyError("Identify", parsedXml),
-      );
+    const parsedXML = this.#parseOAIPMHXML(xml);
+    if (!hasOwn(parsedXML, "Identify")) {
+      throw new NonConformingError(new ExpectedKeyError("Identify", parsedXML));
     }
-    return parsedXml.Identify;
+    return parsedXML.Identify[0];
   };
 
   parseGetRecord = (xml: string) => {
-    const parsedXml = this.#parseOaiPmhXml(xml);
-    if (!hasOwn(parsedXml, "GetRecord")) {
+    const parsedXML = this.#parseOAIPMHXML(xml);
+    if (!hasOwn(parsedXML, "GetRecord")) {
       throw new NonConformingError(
-        new ExpectedKeyError("GetRecord", parsedXml),
+        new ExpectedKeyError("GetRecord", parsedXML),
       );
     }
-    return parsedXml.GetRecord.record;
+    return parsedXML.GetRecord[0].val.record[0];
   };
 
-  #parseResumptionToken(
-    parsedVerb: ResumptionTokenResponses,
-  ) {
-    return parsedVerb.resumptionToken?.["#text"] ?? null;
-  }
-
   parseListIdentifiers = (xml: string) => {
-    const parsedXml = this.#parseOaiPmhXml(xml);
-    if (!hasOwn(parsedXml, "ListIdentifiers")) {
+    const parsedXML = this.#parseOAIPMHXML(xml);
+    if (!hasOwn(parsedXML, "ListIdentifiers")) {
       throw new NonConformingError(
-        new ExpectedKeyError("ListIdentifiers", parsedXml),
+        new ExpectedKeyError("ListIdentifiers", parsedXML),
       );
     }
-    const { ListIdentifiers } = parsedXml;
+    const { ListIdentifiers } = parsedXML;
     return {
-      records: ListIdentifiers.header,
-      resumptionToken: this.#parseResumptionToken(ListIdentifiers),
+      records: ListIdentifiers[0].val.header,
+      resumptionToken: parseResumptionToken(ListIdentifiers),
     };
   };
 
   parseListMetadataFormats = (xml: string) => {
-    const parsedXml = this.#parseOaiPmhXml(xml);
-    if (!hasOwn(parsedXml, "ListMetadataFormats")) {
+    const parsedXML = this.#parseOAIPMHXML(xml);
+    if (!hasOwn(parsedXML, "ListMetadataFormats")) {
       throw new NonConformingError(
-        new ExpectedKeyError("ListMetadataFormats", parsedXml),
+        new ExpectedKeyError("ListMetadataFormats", parsedXML),
       );
     }
-    return parsedXml.ListMetadataFormats.metadataFormat;
+    return parsedXML.ListMetadataFormats[0].val.metadataFormat;
   };
 
   parseListRecords = (xml: string) => {
-    const parsedXml = this.#parseOaiPmhXml(xml);
-    if (!hasOwn(parsedXml, "ListRecords")) {
+    const parsedXML = this.#parseOAIPMHXML(xml);
+    if (!hasOwn(parsedXML, "ListRecords")) {
       throw new NonConformingError(
-        new ExpectedKeyError("ListRecords", parsedXml),
+        new ExpectedKeyError("ListRecords", parsedXML),
       );
     }
-    const { ListRecords } = parsedXml;
+    const { ListRecords } = parsedXML;
     return {
-      records: ListRecords.record,
-      resumptionToken: this.#parseResumptionToken(ListRecords),
+      records: ListRecords[0].val.record,
+      resumptionToken: parseResumptionToken(ListRecords),
     };
   };
 
   parseListSets = (xml: string) => {
-    const parsedXml = this.#parseOaiPmhXml(xml);
-    if (!hasOwn(parsedXml, "ListSets")) {
-      throw new NonConformingError(
-        new ExpectedKeyError("ListSets", parsedXml),
-      );
+    const parsedXML = this.#parseOAIPMHXML(xml);
+    if (!hasOwn(parsedXML, "ListSets")) {
+      throw new NonConformingError(new ExpectedKeyError("ListSets", parsedXML));
     }
-    const { ListSets } = parsedXml;
+    const { ListSets } = parsedXML;
     return {
-      records: parsedXml.ListSets.set,
-      resumptionToken: this.#parseResumptionToken(ListSets),
+      records: ListSets[0].val?.set,
+      resumptionToken: parseResumptionToken(ListSets),
     };
   };
 }

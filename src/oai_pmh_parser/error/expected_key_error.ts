@@ -1,14 +1,14 @@
-import { OAIBaseObj } from "../parser.model.ts";
+import { OAIPMHSuccessResponse } from "../model/oai.ts";
 
 export class ExpectedKeyError extends Error {
-  readonly #parsedXml: OAIBaseObj;
-  get parsedXml() {
-    return this.#parsedXml;
+  readonly #parsedXML: OAIPMHSuccessResponse;
+  get parsedXML() {
+    return this.#parsedXML;
   }
 
-  constructor(key: string, parsedXml: OAIBaseObj) {
+  constructor(key: string, parsedXML: OAIPMHSuccessResponse) {
     super(`expected "${key}" key on object`);
     this.name = ExpectedKeyError.name;
-    this.#parsedXml = parsedXml;
+    this.#parsedXML = parsedXML;
   }
 }
