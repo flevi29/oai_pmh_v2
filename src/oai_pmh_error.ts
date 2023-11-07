@@ -1,4 +1,5 @@
 export class OAIPMHError extends Error {
+  override name = OAIPMHError.name;
   readonly #response?: Response;
 
   get response() {
@@ -10,8 +11,10 @@ export class OAIPMHError extends Error {
     options?: { response?: Response; cause?: unknown },
   ) {
     super(message);
-    this.name = OAIPMHError.name;
-    this.#response = options?.response;
-    this.cause = options?.cause;
+
+    if (options !== undefined) {
+      this.#response = options.response;
+      this.cause = options.cause;
+    }
   }
 }

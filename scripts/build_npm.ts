@@ -1,5 +1,5 @@
 import { build, emptyDir } from "../dev_deps.ts";
-import { default as denoJson } from "../deno.json" assert { type: "json" };
+import { default as denoJson } from "../deno.json" with { type: "json" };
 
 await emptyDir("./npm");
 
@@ -27,10 +27,9 @@ await build({
       url: "https://github.com/flevi29/oai_pmh_v2/issues",
     },
     homepage: "https://github.com/flevi29/oai_pmh_v2#readme",
-    devDependencies: { "@types/node": "^20.4.1" },
+    devDependencies: { "@types/node": "^20.9.0" },
   },
-  // DOM is required for fetch API to type check properly
-  compilerOptions: { target: "ES2022", lib: ["DOM"] },
+  compilerOptions: { target: "ES2022" },
   packageManager: "pnpm",
 });
 

@@ -1,32 +1,119 @@
-import { z } from "../../../deps.ts";
-import { HEADER } from "./header.ts";
-import { RESUMPTION_TOKEN } from "./shared.ts";
-import { TRANSFORMED_PARSED_XML_VALUE } from "./transform.ts";
+import { isOAIPMHHeader, type OAIPMHHeader } from "./header.ts";
+import {
+  isOAIPMHResumptionToken,
+  type OAIPMHBaseResponseSharedRecord,
+  type OAIPMHResumptionToken,
+  validateOAIPMHBaseResponseAndGetValueOfKey,
+} from "./shared.ts";
+import { parsedXMLHasKeysBetweenLengths } from "./util.ts";
+import type { ParsedXML, ParsedXMLRecordValue } from "./parsed_xml.ts";
 
-const RECORD = z.object({
-  val: z.strictObject({
-    header: z.tuple([HEADER]),
-    metadata: z.tuple([z.lazy(() => TRANSFORMED_PARSED_XML_VALUE)]).optional(),
-    about: z.array(z.lazy(() => TRANSFORMED_PARSED_XML_VALUE)).optional(),
-  }),
-});
-type OAIPMHRecord = z.infer<typeof RECORD>;
+type OAIPMHRecord = {
+  i: number;
+  val: {
+    header: [OAIPMHHeader];
+    metadata?: [ParsedXMLRecordValue];
+    about?: ParsedXMLRecordValue[];
+  };
+};
 
-const GET_RECORD_REPONSE = z.object({
-  GetRecord: z.tuple([
-    z.object({ val: z.strictObject({ record: z.tuple([RECORD]) }) }),
-  ]),
-});
+function isOAIPMHRecord(value: ParsedXMLRecordValue): value is OAIPMHRecord {
+  const { val, attr } = value;
+  if (
+    val === undefined || typeof val === "string" ||
+    !parsedXMLHasKeysBetweenLengths(val, 1, 3) || attr !== undefined
+  ) {
+    return false;
+  }
 
-const LIST_RECORDS_REPONSE = z.object({
-  ListRecords: z.tuple([
-    z.object({
-      val: z.strictObject({
-        record: z.array(RECORD),
-        resumptionToken: RESUMPTION_TOKEN.optional(),
-      }),
-    }),
-  ]),
-});
+  const { header, metadata } = val;
+  if (
+    header === undefined || header.length !== 1 ||
+    !isOAIPMHHeader(header[0]!) ||
+    (metadata !== undefined && metadata.length !== 1)
+  ) {
+    return false;
+  }
 
-export { GET_RECORD_REPONSE, LIST_RECORDS_REPONSE, type OAIPMHRecord };
+  return true;
+}
+
+type OAIPMHGetRecordResponse = OAIPMHBaseResponseSharedRecord & {
+  GetRecord: [{ i: number; val: { record: [OAIPMHRecord] } }];
+};
+
+function isOAIPMHGetRecordResponse(
+  value: ParsedXML,
+): value is OAIPMHGetRecordResponse {
+  const GetRecord = validateOAIPMHBaseResponseAndGetValueOfKey(
+    value,
+    "GetRecord",
+  );
+  if (!GetRecord) {
+    return false;
+  }
+
+  const { val, attr } = GetRecord[0]!;
+  if (
+    val === undefined || typeof val === "string" ||
+    Object.keys(val).length !== 1 || attr !== undefined
+  ) {
+    return false;
+  }
+
+  const { record } = val;
+  return record !== undefined && record.length === 1 &&
+    isOAIPMHRecord(record[0]!);
+}
+
+type OAIPMHListRecordsResponse = OAIPMHBaseResponseSharedRecord & {
+  ListRecords: [
+    {
+      i: number;
+      val: { record: OAIPMHRecord[]; resumptionToken?: OAIPMHResumptionToken };
+    },
+  ];
+};
+
+function isOAIPMHListRecordsResponse(
+  value: ParsedXML,
+): value is OAIPMHListRecordsResponse {
+  const ListRecords = validateOAIPMHBaseResponseAndGetValueOfKey(
+    value,
+    "ListRecords",
+  );
+  if (!ListRecords) {
+    return false;
+  }
+
+  const { val, attr } = ListRecords[0]!;
+  if (
+    val === undefined || typeof val === "string" ||
+    !parsedXMLHasKeysBetweenLengths(val, 1, 2) || attr !== undefined
+  ) {
+    return false;
+  }
+
+  const { record, resumptionToken } = val;
+
+  if (
+    record === undefined ||
+    (resumptionToken !== undefined && !isOAIPMHResumptionToken(resumptionToken))
+  ) {
+    return false;
+  }
+
+  for (const recordElem of record) {
+    if (!isOAIPMHRecord(recordElem)) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+export {
+  isOAIPMHGetRecordResponse,
+  isOAIPMHListRecordsResponse,
+  type OAIPMHRecord,
+};

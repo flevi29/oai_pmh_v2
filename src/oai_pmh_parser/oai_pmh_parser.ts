@@ -1,32 +1,42 @@
 import { XMLParser } from "../../deps.ts";
-import { NonConformingError } from "./error/non_conforming_error.ts";
-import { ExpectedKeyError } from "./error/expected_key_error.ts";
+import { ValidationError } from "./error/validation_error.ts";
 import { ParsedOAIPMHError } from "./error/parsed_oai_pmh_error.ts";
-import { validateAndTransform } from "./model/transform.ts";
-import { ResumptionTokenResponse } from "./model/oai.ts";
+import { type ParsedXML, validateAndGetParsedXML } from "./model/parsed_xml.ts";
+import { isOAIPMHBaseResponse } from "./model/base_oai_pmh.ts";
+import { isOAIPMHErrorResponse } from "./model/error.ts";
+import {
+  isOAIPMHIdentifyResponse,
+  type OAIPMHIdentify,
+} from "./model/identify.ts";
+import {
+  isOAIPMHGetRecordResponse,
+  isOAIPMHListRecordsResponse,
+  type OAIPMHRecord,
+} from "./model/record.ts";
+import {
+  isOAIPMHListIdentifiersResponse,
+  type OAIPMHHeader,
+} from "./model/header.ts";
+import {
+  isOAIPMHListMetadataFormatsResponse,
+  type OAIPMHMetadataFormat,
+} from "./model/metadata_format.ts";
+import { isOAIPMHListSetsResponse, type OAIPMHSet } from "./model/set.ts";
+import type { OAIPMHResumptionToken } from "./model/shared.ts";
 
-// https://github.com/microsoft/TypeScript/issues/44253
-/** Extract from T those types that has K keys  */
-// deno-lint-ignore no-explicit-any
-type ExtractByKey<T, K extends keyof any> = T extends infer R
-  ? K extends keyof R ? R
-  : never
-  : never;
+type ListResponse<T> = {
+  records: T[];
+  resumptionToken: string | null;
+};
 
-type KeyofUnion<T> = T extends infer R ? keyof R : never;
-
-// @TODO: Make this type apply globally rather than from a function, and make sure the
-//        type is not included in
-// deno-lint-ignore no-explicit-any
-function hasOwn<T extends Record<keyof any, any>, K extends keyof any>(
-  o: T,
-  v: K,
-): o is K extends KeyofUnion<T> ? ExtractByKey<T, K>
-  : T & { [P in K]: unknown } {
-  return Object.hasOwn(o, v);
-}
-
-function parseResumptionToken(parsedVerb: ResumptionTokenResponse) {
+function parseResumptionToken(
+  parsedVerb: [
+    {
+      val: { resumptionToken?: OAIPMHResumptionToken; [TKey: string]: unknown };
+      [TKey: string]: unknown;
+    },
+  ],
+): string | null {
   return parsedVerb[0].val?.resumptionToken?.[0].val ?? null;
 }
 
@@ -39,78 +49,82 @@ export class OAIPMHParser {
     parseTagValue: false,
   });
 
-  #parseOAIPMHXML(xml: string) {
-    const parsedXML = this.#xmlParser.parse(xml);
-    const validatedAndTransformedXML = validateAndTransform(parsedXML);
-    const oaiResponse = validatedAndTransformedXML["OAI-PMH"][0].val;
-    if (hasOwn(oaiResponse, "error")) {
-      throw new ParsedOAIPMHError(oaiResponse.error);
+  #parseAndValidateOAIPMHXML(xml: string): ParsedXML {
+    const fxpParsedXML = this.#xmlParser.parse(xml);
+    const parsedXML = validateAndGetParsedXML(fxpParsedXML);
+
+    if (parsedXML === undefined || !isOAIPMHBaseResponse(parsedXML)) {
+      throw new ValidationError(xml, parsedXML);
     }
+
+    const oaiResponse = parsedXML["OAI-PMH"][0].val;
+    if (isOAIPMHErrorResponse(oaiResponse)) {
+      throw new ParsedOAIPMHError(oaiResponse);
+    }
+
     return oaiResponse;
   }
 
-  parseIdentify = (xml: string) => {
-    const parsedXML = this.#parseOAIPMHXML(xml);
-    if (!hasOwn(parsedXML, "Identify")) {
-      throw new NonConformingError(new ExpectedKeyError("Identify", parsedXML));
+  readonly parseIdentify = (xml: string): OAIPMHIdentify => {
+    const oaiResponse = this.#parseAndValidateOAIPMHXML(xml);
+    if (!isOAIPMHIdentifyResponse(oaiResponse)) {
+      throw new ValidationError(xml, oaiResponse);
     }
-    return parsedXML.Identify[0];
+
+    return oaiResponse.Identify[0];
   };
 
-  parseGetRecord = (xml: string) => {
-    const parsedXML = this.#parseOAIPMHXML(xml);
-    if (!hasOwn(parsedXML, "GetRecord")) {
-      throw new NonConformingError(
-        new ExpectedKeyError("GetRecord", parsedXML),
-      );
+  readonly parseGetRecord = (xml: string): OAIPMHRecord => {
+    const oaiResponse = this.#parseAndValidateOAIPMHXML(xml);
+    if (!isOAIPMHGetRecordResponse(oaiResponse)) {
+      throw new ValidationError(xml, oaiResponse);
     }
-    return parsedXML.GetRecord[0].val.record[0];
+
+    return oaiResponse.GetRecord[0].val.record[0];
   };
 
-  parseListIdentifiers = (xml: string) => {
-    const parsedXML = this.#parseOAIPMHXML(xml);
-    if (!hasOwn(parsedXML, "ListIdentifiers")) {
-      throw new NonConformingError(
-        new ExpectedKeyError("ListIdentifiers", parsedXML),
-      );
+  readonly parseListIdentifiers = (xml: string): ListResponse<OAIPMHHeader> => {
+    const oaiResponse = this.#parseAndValidateOAIPMHXML(xml);
+    if (!isOAIPMHListIdentifiersResponse(oaiResponse)) {
+      throw new ValidationError(xml, oaiResponse);
     }
-    const { ListIdentifiers } = parsedXML;
+
+    const { ListIdentifiers } = oaiResponse;
     return {
       records: ListIdentifiers[0].val.header,
       resumptionToken: parseResumptionToken(ListIdentifiers),
     };
   };
 
-  parseListMetadataFormats = (xml: string) => {
-    const parsedXML = this.#parseOAIPMHXML(xml);
-    if (!hasOwn(parsedXML, "ListMetadataFormats")) {
-      throw new NonConformingError(
-        new ExpectedKeyError("ListMetadataFormats", parsedXML),
-      );
+  readonly parseListMetadataFormats = (xml: string): OAIPMHMetadataFormat[] => {
+    const oaiResponse = this.#parseAndValidateOAIPMHXML(xml);
+    if (!isOAIPMHListMetadataFormatsResponse(oaiResponse)) {
+      throw new ValidationError(xml, oaiResponse);
     }
-    return parsedXML.ListMetadataFormats[0].val.metadataFormat;
+
+    return oaiResponse.ListMetadataFormats[0].val.metadataFormat;
   };
 
-  parseListRecords = (xml: string) => {
-    const parsedXML = this.#parseOAIPMHXML(xml);
-    if (!hasOwn(parsedXML, "ListRecords")) {
-      throw new NonConformingError(
-        new ExpectedKeyError("ListRecords", parsedXML),
-      );
+  readonly parseListRecords = (xml: string): ListResponse<OAIPMHRecord> => {
+    const oaiResponse = this.#parseAndValidateOAIPMHXML(xml);
+    if (!isOAIPMHListRecordsResponse(oaiResponse)) {
+      throw new ValidationError(xml, oaiResponse);
     }
-    const { ListRecords } = parsedXML;
+
+    const { ListRecords } = oaiResponse;
     return {
       records: ListRecords[0].val.record,
       resumptionToken: parseResumptionToken(ListRecords),
     };
   };
 
-  parseListSets = (xml: string) => {
-    const parsedXML = this.#parseOAIPMHXML(xml);
-    if (!hasOwn(parsedXML, "ListSets")) {
-      throw new NonConformingError(new ExpectedKeyError("ListSets", parsedXML));
+  readonly parseListSets = (xml: string): ListResponse<OAIPMHSet> => {
+    const oaiResponse = this.#parseAndValidateOAIPMHXML(xml);
+    if (!isOAIPMHListSetsResponse(oaiResponse)) {
+      throw new ValidationError(xml, oaiResponse);
     }
-    const { ListSets } = parsedXML;
+
+    const { ListSets } = oaiResponse;
     return {
       records: ListSets[0].val?.set,
       resumptionToken: parseResumptionToken(ListSets),

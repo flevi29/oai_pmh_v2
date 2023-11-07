@@ -1,5 +1,5 @@
 import { OAIPMHError } from "./oai_pmh_error.ts";
-import {
+import type {
   OAIPMHRequestConstructorOptions,
   RequestOptions,
 } from "./oai_pmh.model.ts";
@@ -78,10 +78,12 @@ export class OAIPMHRequest {
         },
       );
       await checkResponse(response);
+
       return [await response.text(), response];
     } catch (error: unknown) {
       const retry = options?.retry ?? 3;
       const retryInterval = options?.retryInterval ?? 1000;
+
       if (
         !(error instanceof OAIPMHError) ||
         error.response === undefined ||
@@ -90,15 +92,19 @@ export class OAIPMHRequest {
       ) {
         throw error;
       }
+
       if (this.#debugLogRetries) {
         console.debug(error);
       }
+
       if (retryInterval > 0) {
         if (this.#debugLogRetries) {
           console.debug(`retrying request in ${retryInterval.toString(10)}ms"`);
         }
+
         await new Promise((resolve) => setTimeout(resolve, retryInterval));
       }
+
       return this.request(searchParams, {
         ...options,
         retry: retry - 1,
