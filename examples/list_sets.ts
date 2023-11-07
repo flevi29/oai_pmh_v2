@@ -2,7 +2,9 @@ import { oaiPmh } from "./shared.ts";
 
 try {
   for await (
-    const arr of oaiPmh.listSets({ signal: AbortSignal.timeout(17000) })
+    const arr of oaiPmh.listSets({
+      signal: AbortSignal.timeout(17000),
+    })
   ) {
     console.log(arr);
   }

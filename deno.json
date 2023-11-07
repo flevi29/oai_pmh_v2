@@ -2,7 +2,7 @@
   "version": "0.7.5",
   "tasks": {
     "build:npm": "deno run --allow-env --allow-read --allow-write --allow-net --allow-run scripts/build_npm.ts",
-    "fmt": "deno run --allow-read --allow-write --allow-sys --allow-env npm:prettier@^3.0.3 -w src scripts examples && deno fmt src scripts examples"
+    "fmt": "deno run --allow-read --allow-write --allow-sys --allow-env npm:prettier@^3.0.3 -w src examples && deno fmt src scripts examples"
   },
   "compilerOptions": {
     "verbatimModuleSyntax": true,

@@ -12,9 +12,11 @@ export class ParsedOAIPMHError extends Error {
 
     super(
       "OAI-PMH provider returned error(s):" +
-        mappedErrors.map((v) =>
-          `\n\t${v.code}${v.text !== undefined ? `: ${v.text}` : ""}`
-        ).join(""),
+        mappedErrors
+          .map(
+            (v) => `\n\t${v.code}${v.text !== undefined ? `: ${v.text}` : ""}`,
+          )
+          .join(""),
     );
 
     this.cause = mappedErrors;

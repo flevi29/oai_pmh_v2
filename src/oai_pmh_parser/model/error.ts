@@ -15,10 +15,16 @@ type OAIPMHErrorCode =
   | "noSetHierarchy";
 
 function isOAIPMHErrorCode(value: string): value is OAIPMHErrorCode {
-  return value === "badArgument" || value === "badResumptionToken" ||
-    value === "badVerb" || value === "cannotDisseminateFormat" ||
-    value === "idDoesNotExist" || value === "noRecordsMatch" ||
-    value === "noMetadataFormats" || value === "noSetHierarchy";
+  return (
+    value === "badArgument" ||
+    value === "badResumptionToken" ||
+    value === "badVerb" ||
+    value === "cannotDisseminateFormat" ||
+    value === "idDoesNotExist" ||
+    value === "noRecordsMatch" ||
+    value === "noMetadataFormats" ||
+    value === "noSetHierarchy"
+  );
 }
 
 type OAIPMHErrorResponse = OAIPMHBaseResponseSharedRecord & {

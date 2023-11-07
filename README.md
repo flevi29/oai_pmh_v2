@@ -65,7 +65,7 @@ try {
 
 > [!WARNING]
 > When using an `AbortSignal` with any list method
-> (`listIdentifiers`, `listRecords`, `listSets`), there will be some miniscule
+> (`listIdentifiers`, `listRecords`, `listSets`), there will be some minuscule
 > memory leak until the loop exits. This is because for each request there is an
 > additional listener registered for the signal. Specifically in Node.js this
 > will cause a lot of warnings (after 100 or so loops). This is a fetch API spec

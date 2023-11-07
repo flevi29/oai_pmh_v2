@@ -17,7 +17,8 @@ type OAIPMHBaseResponse = {
 function isOAIPMHBaseResponse(value: ParsedXML): value is OAIPMHBaseResponse {
   const { "OAI-PMH": OAIPMH } = value;
   if (
-    OAIPMH === undefined || OAIPMH.length !== 1 ||
+    OAIPMH === undefined ||
+    OAIPMH.length !== 1 ||
     Object.keys(value).length !== 1
   ) {
     return false;
@@ -35,8 +36,13 @@ function isOAIPMHBaseResponse(value: ParsedXML): value is OAIPMHBaseResponse {
     "@_xsi:schemaLocation": xsiSchemaLocation,
   } = attr;
 
-  return val !== undefined && typeof val !== "string" && xmlns !== undefined &&
-    xmlnsXSI !== undefined && xsiSchemaLocation !== undefined;
+  return (
+    val !== undefined &&
+    typeof val !== "string" &&
+    xmlns !== undefined &&
+    xmlnsXSI !== undefined &&
+    xsiSchemaLocation !== undefined
+  );
 }
 
 export { isOAIPMHBaseResponse };

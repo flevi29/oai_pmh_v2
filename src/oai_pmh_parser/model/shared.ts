@@ -26,8 +26,10 @@ function validateOAIPMHBaseResponseAndGetValueOfKey(
   key: string,
 ): ParsedXMLRecordValue[] | false {
   const { [key]: responseValue, request, responseDate } = value;
-  return responseValue !== undefined && request !== undefined &&
-      responseDate !== undefined && Object.keys(value).length === 3
+  return responseValue !== undefined &&
+      request !== undefined &&
+      responseDate !== undefined &&
+      Object.keys(value).length === 3
     ? responseValue
     : false;
 }

@@ -20,22 +20,21 @@ type OAIPMHRecord = {
 function isOAIPMHRecord(value: ParsedXMLRecordValue): value is OAIPMHRecord {
   const { val, attr } = value;
   if (
-    val === undefined || typeof val === "string" ||
-    !parsedXMLHasKeysBetweenLengths(val, 1, 3) || attr !== undefined
+    val === undefined ||
+    typeof val === "string" ||
+    !parsedXMLHasKeysBetweenLengths(val, 1, 3) ||
+    attr !== undefined
   ) {
     return false;
   }
 
   const { header, metadata } = val;
-  if (
-    header === undefined || header.length !== 1 ||
-    !isOAIPMHHeader(header[0]!) ||
-    (metadata !== undefined && metadata.length !== 1)
-  ) {
-    return false;
-  }
-
-  return true;
+  return (
+    header !== undefined &&
+    header.length === 1 &&
+    isOAIPMHHeader(header[0]!) &&
+    (metadata === undefined || metadata.length === 1)
+  );
 }
 
 type OAIPMHGetRecordResponse = OAIPMHBaseResponseSharedRecord & {
@@ -55,15 +54,18 @@ function isOAIPMHGetRecordResponse(
 
   const { val, attr } = GetRecord[0]!;
   if (
-    val === undefined || typeof val === "string" ||
-    Object.keys(val).length !== 1 || attr !== undefined
+    val === undefined ||
+    typeof val === "string" ||
+    Object.keys(val).length !== 1 ||
+    attr !== undefined
   ) {
     return false;
   }
 
   const { record } = val;
-  return record !== undefined && record.length === 1 &&
-    isOAIPMHRecord(record[0]!);
+  return (
+    record !== undefined && record.length === 1 && isOAIPMHRecord(record[0]!)
+  );
 }
 
 type OAIPMHListRecordsResponse = OAIPMHBaseResponseSharedRecord & {
@@ -88,8 +90,10 @@ function isOAIPMHListRecordsResponse(
 
   const { val, attr } = ListRecords[0]!;
   if (
-    val === undefined || typeof val === "string" ||
-    !parsedXMLHasKeysBetweenLengths(val, 1, 2) || attr !== undefined
+    val === undefined ||
+    typeof val === "string" ||
+    !parsedXMLHasKeysBetweenLengths(val, 1, 2) ||
+    attr !== undefined
   ) {
     return false;
   }

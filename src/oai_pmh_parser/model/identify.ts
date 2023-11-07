@@ -32,8 +32,10 @@ function isOAIPMHDeletedRecord(
   }
 
   const { val, attr } = value[0]!;
-  return attr === undefined && (val === "no" || val === "transient" ||
-    val === "persistent");
+  return (
+    attr === undefined &&
+    (val === "no" || val === "transient" || val === "persistent")
+  );
 }
 
 function isOAIPMHGranularity(
@@ -44,8 +46,10 @@ function isOAIPMHGranularity(
   }
 
   const { val, attr } = value[0]!;
-  return attr === undefined &&
-    (val === "YYYY-MM-DD" || val === "YYYY-MM-DDThh:mm:ssZ");
+  return (
+    attr === undefined &&
+    (val === "YYYY-MM-DD" || val === "YYYY-MM-DDThh:mm:ssZ")
+  );
 }
 
 function isOAIPMHIdentify(
@@ -53,7 +57,9 @@ function isOAIPMHIdentify(
 ): value is OAIPMHIdentify {
   const { attr, val } = value;
   if (
-    attr !== undefined || val === undefined || typeof val === "string" ||
+    attr !== undefined ||
+    val === undefined ||
+    typeof val === "string" ||
     !parsedXMLHasKeysBetweenLengths(val, 7, 9)
   ) {
     return false;
@@ -73,14 +79,18 @@ function isOAIPMHIdentify(
   if (
     repositoryName === undefined ||
     !isStringWithNoAttributeTuple(repositoryName) ||
-    baseURL === undefined || !isStringWithNoAttributeTuple(baseURL) ||
+    baseURL === undefined ||
+    !isStringWithNoAttributeTuple(baseURL) ||
     protocolVersion === undefined ||
     !isStringWithNoAttributeTuple(protocolVersion) ||
     earliestDatestamp === undefined ||
     !isStringWithNoAttributeTuple(earliestDatestamp) ||
-    deletedRecord === undefined || !isOAIPMHDeletedRecord(deletedRecord) ||
-    granularity === undefined || !isOAIPMHGranularity(granularity) ||
-    adminEmail === undefined || !isStringWithNoAttributeTuple(adminEmail)
+    deletedRecord === undefined ||
+    !isOAIPMHDeletedRecord(deletedRecord) ||
+    granularity === undefined ||
+    !isOAIPMHGranularity(granularity) ||
+    adminEmail === undefined ||
+    !isStringWithNoAttributeTuple(adminEmail)
   ) {
     return false;
   }

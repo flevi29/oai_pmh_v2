@@ -19,15 +19,21 @@ type OAIPMHSet = {
 function isOAIPMHSet(value: ParsedXMLRecordValue): value is OAIPMHSet {
   const { val, attr } = value;
   if (
-    val === undefined || typeof val === "string" ||
-    Object.keys(val).length !== 2 || attr !== undefined
+    val === undefined ||
+    typeof val === "string" ||
+    Object.keys(val).length !== 2 ||
+    attr !== undefined
   ) {
     return false;
   }
 
   const { setName, setSpec } = val;
-  return setName !== undefined && isStringWithNoAttributeTuple(setName) &&
-    setSpec !== undefined && isStringWithNoAttributeTuple(setSpec);
+  return (
+    setName !== undefined &&
+    isStringWithNoAttributeTuple(setName) &&
+    setSpec !== undefined &&
+    isStringWithNoAttributeTuple(setSpec)
+  );
 }
 
 type OAIPMHListSetsResponse = OAIPMHBaseResponseSharedRecord & {
@@ -58,8 +64,7 @@ function isOAIPMHListSetsResponse(
   const { set, resumptionToken } = val;
   if (
     set === undefined ||
-    (resumptionToken !== undefined &&
-      !isOAIPMHResumptionToken(resumptionToken))
+    (resumptionToken !== undefined && !isOAIPMHResumptionToken(resumptionToken))
   ) {
     return false;
   }

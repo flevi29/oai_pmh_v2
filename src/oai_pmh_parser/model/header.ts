@@ -47,8 +47,10 @@ function isOAIPMHHeader(value: ParsedXMLRecordValue): value is OAIPMHHeader {
   const { identifier, datestamp, setSpec } = val;
 
   if (
-    identifier === undefined || !isStringWithNoAttributeTuple(identifier) ||
-    datestamp === undefined || !isStringWithNoAttributeTuple(datestamp)
+    identifier === undefined ||
+    !isStringWithNoAttributeTuple(identifier) ||
+    datestamp === undefined ||
+    !isStringWithNoAttributeTuple(datestamp)
   ) {
     return false;
   }
@@ -104,8 +106,9 @@ function isOAIPMHListIdentifiersResponse(
     }
   }
 
-  return resumptionToken === undefined ||
-    isOAIPMHResumptionToken(resumptionToken);
+  return (
+    resumptionToken === undefined || isOAIPMHResumptionToken(resumptionToken)
+  );
 }
 
 export { isOAIPMHHeader, isOAIPMHListIdentifiersResponse, type OAIPMHHeader };

@@ -21,7 +21,9 @@ function isOAIPMHMetadataFormat(
   const { val, attr } = value;
 
   if (
-    attr !== undefined || val === undefined || typeof val === "string" ||
+    attr !== undefined ||
+    val === undefined ||
+    typeof val === "string" ||
     Object.keys(val).length !== 3
   ) {
     return false;
@@ -29,18 +31,23 @@ function isOAIPMHMetadataFormat(
 
   const { metadataPrefix, schema, metadataNamespace } = val;
 
-  return metadataPrefix !== undefined &&
+  return (
+    metadataPrefix !== undefined &&
     isStringWithNoAttributeTuple(metadataPrefix) &&
-    schema !== undefined && isStringWithNoAttributeTuple(schema) &&
+    schema !== undefined &&
+    isStringWithNoAttributeTuple(schema) &&
     metadataNamespace !== undefined &&
-    isStringWithNoAttributeTuple(metadataNamespace);
+    isStringWithNoAttributeTuple(metadataNamespace)
+  );
 }
 
 type OAIPMHListMetadataFormatsResponse = OAIPMHBaseResponseSharedRecord & {
-  ListMetadataFormats: [{
-    i: number;
-    val: { metadataFormat: OAIPMHMetadataFormat[] };
-  }];
+  ListMetadataFormats: [
+    {
+      i: number;
+      val: { metadataFormat: OAIPMHMetadataFormat[] };
+    },
+  ];
 };
 
 function isOAIPMHListMetadataFormatsResponse(
@@ -56,7 +63,9 @@ function isOAIPMHListMetadataFormatsResponse(
 
   const { val, attr } = ListMetadataFormats[0]!;
   if (
-    attr !== undefined || val === undefined || typeof val === "string" ||
+    attr !== undefined ||
+    val === undefined ||
+    typeof val === "string" ||
     Object.keys(val).length !== 1
   ) {
     return false;
