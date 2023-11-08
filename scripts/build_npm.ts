@@ -27,7 +27,10 @@ await build({
       url: "https://github.com/flevi29/oai_pmh_v2/issues",
     },
     homepage: "https://github.com/flevi29/oai_pmh_v2#readme",
+    // options under are required for fetch to work with Node.js
+    // https://nodejs.org/dist/latest-v20.x/docs/api/globals.html#fetch
     devDependencies: { "@types/node": "^20.9.0" },
+    engines: { node: ">=18.0.0" },
   },
   compilerOptions: { target: "ES2022" },
   packageManager: "pnpm",
