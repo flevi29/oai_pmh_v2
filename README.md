@@ -13,7 +13,8 @@ npm i oai_pmh_v2
 ```
 
 > [!IMPORTANT]
-> For Node.js users, this is an ESM only package, read more
+> For Node.js users, minimum 18.0.0 is required, and this is an ESM
+> only package, read more
 > [here](https://www.typescriptlang.org/docs/handbook/esm-node.html) and maybe
 > [here](https://gist.github.com/sindresorhus/a39789f98801d908bbc7ff3ecc99d99c).
 
