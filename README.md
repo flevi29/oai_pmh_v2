@@ -12,14 +12,16 @@ API client package/module for Node.js and Deno.
 npm i oai_pmh_v2
 ```
 
-> [!IMPORTANT] For Node.js users a
+> [!IMPORTANT]
+> For Node.js users a
 > [`fetch`](https://developer.mozilla.org/en-US/docs/Web/API/fetch#browser_compatibility)
 > compatible version of the runtime is required, or a polyfill otherwise (like
 > [`node-fetch`](https://github.com/node-fetch/node-fetch?tab=readme-ov-file#providing-global-access)).
 
 ## Example
 
-> [!NOTE] It is possible to iterate through the generator with a `for...of`
+> [!NOTE]
+> It is possible to iterate through the generator with a `for...of`
 > loop, but this way we can only acquire the
 > [`yield`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/yield)
 > -ed values of the generator, the `return` -ed value would be lost, and the
@@ -62,7 +64,8 @@ for (;;) {
 }
 ```
 
-> [!WARNING] When using an `AbortSignal` with any list method
+> [!WARNING]
+> When using an `AbortSignal` with any list method
 > (`listIdentifiers`, `listRecords`, `listSets`), there will be some minuscule
 > memory leak until the loop exits. This is because for each request there is an
 > additional listener registered for the signal. Specifically in Node.js this
