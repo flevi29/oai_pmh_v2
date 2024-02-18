@@ -12,60 +12,57 @@ API client package/module for Node.js and Deno.
 npm i oai_pmh_v2
 ```
 
-> [!IMPORTANT]
-> For Node.js users, minimum 18.0.0 is required, and this is an ESM
-> only package, read more
-> [here](https://www.typescriptlang.org/docs/handbook/esm-node.html) and maybe
-> [here](https://gist.github.com/sindresorhus/a39789f98801d908bbc7ff3ecc99d99c).
+> [!IMPORTANT] For Node.js users a
+> [`fetch`](https://developer.mozilla.org/en-US/docs/Web/API/fetch#browser_compatibility)
+> compatible version of the runtime is required, or a polyfill otherwise (like
+> [`node-fetch`](https://github.com/node-fetch/node-fetch?tab=readme-ov-file#providing-global-access)).
 
 ## Example
 
+> [!NOTE] It is possible to iterate through the generator with a `for...of`
+> loop, but this way we can only acquire the
+> [`yield`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/yield)
+> -ed values of the generator, the `return` -ed value would be lost, and the
+> `return` -ed value contains the potential error.
+
 ```typescript
-// Node.js
-import { OAIPMH, OAIPMHError, ParsedOAIPMHError } from "oai_pmh_v2";
-// Deno
-import {
-  OAIPMH,
-  OAIPMHError,
-  ParsedOAIPMHError,
-} from "https://deno.land/x/oai_pmh_v2/src/mod.ts";
+// `... from "npm:oai_pmh_v2"` for Deno
+import { OAIPMH, STATUS } from "oai_pmh_v2";
 
 // you can find OAI-PMH providers here (although a lot of them might not work):
 // https://www.openarchives.org/Register/BrowseSites
 const oaiPMH = new OAIPMH({
-  baseUrl:
+  baseURL:
     "http://bibliotecavirtual.asturias.es/i18n/oai/oai_bibliotecavirtual.asturias.es.cmd",
 });
 
-try {
-  for await (
-    const values of oaiPMH.listIdentifiers(
-      { metadataPrefix: "marc21", from: "2015-08-03", until: "2016-05-30" },
-      { signal: AbortSignal.timeout(20_000) },
-    )
-  ) {
-    console.log(JSON.stringify(values));
-  }
+const g = oaiPmh.listIdentifiers(
+  { metadataPrefix: "marc21", from: "2015-04-10", until: "2015-10-28" },
+  { signal: AbortSignal.timeout(30_000) },
+);
 
-  const info = await oaiPMH.identify();
+for (;;) {
+  const { done, value: gVal } = await g.next();
 
-  console.log(info);
-} catch (error: unknown) {
-  console.error(error);
+  if (done) {
+    // there are no more values yielded by the generator
+    const { status, value } = gVal;
 
-  if (
-    error instanceof OAIPMHError && error.cause instanceof ParsedOAIPMHError
-  ) {
-    // this means there are specific errors returned by the OAI-PMH provider
-    for (const returnedError of error.cause.cause) {
-      console.error(returnedError);
+    if (status !== STATUS.OK) {
+      // handle error, we can narrow error type by checking
+      // against specific values of `STATUS` enum
+      console.error(value);
     }
+
+    // break out of loop as there are no more yielded values
+    break;
   }
+
+  console.log(JSON.stringify(gVal));
 }
 ```
 
-> [!WARNING]
-> When using an `AbortSignal` with any list method
+> [!WARNING] When using an `AbortSignal` with any list method
 > (`listIdentifiers`, `listRecords`, `listSets`), there will be some minuscule
 > memory leak until the loop exits. This is because for each request there is an
 > additional listener registered for the signal. Specifically in Node.js this

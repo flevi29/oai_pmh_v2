@@ -1,10 +1,9 @@
-import { oaiPmh } from "./shared.ts";
+import { oaiPmh, STATUS } from "./shared.ts";
 
-try {
-  console.log(await oaiPmh.listMetadataFormats());
-} catch (error: unknown) {
-  if (!(error instanceof DOMException)) {
-    throw error;
-  }
-  console.warn("Aborted");
+const result = await oaiPmh.listMetadataFormats();
+
+if (result.status === STATUS.OK) {
+  console.log(JSON.stringify(result.value));
+} else {
+  console.error(result.value);
 }

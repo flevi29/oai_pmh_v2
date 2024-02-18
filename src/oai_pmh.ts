@@ -1,58 +1,44 @@
 import { OAIPMHRequest } from "./oai_pmh_request.ts";
-import { OAIPMHError } from "./oai_pmh_error.ts";
-import { OAIPMHParser } from "./oai_pmh_parser/oai_pmh_parser.ts";
-import type {
-  ListOptions,
-  OAIPMHRequestConstructorOptions,
-  RequestOptions,
-} from "./oai_pmh.model.ts";
-import type { OAIPMHMetadataFormat } from "./oai_pmh_parser/model/metadata_format.ts";
-import type { OAIPMHHeader } from "./oai_pmh_parser/model/header.ts";
-import type { OAIPMHRecord } from "./oai_pmh_parser/model/record.ts";
-import type { OAIPMHSet } from "./oai_pmh_parser/model/set.ts";
-import type { OAIPMHIdentify } from "./oai_pmh_parser/model/identify.ts";
+import { type ListResponse, OAIPMHParser } from "./parser/oai_pmh_parser.ts";
+import {
+  type ListOptions,
+  type OAIPMHRequestConstructorOptions,
+  type RequestOptions,
+  type Result,
+  STATUS,
+} from "./model/oai_pmh.ts";
+import type { OAIPMHMetadataFormat } from "./model/parser/metadata_format.ts";
+import type { OAIPMHHeader } from "./model/parser/header.ts";
+import type { OAIPMHRecord } from "./model/parser/record.ts";
+import type { OAIPMHSet } from "./model/parser/set.ts";
+import type { OAIPMHIdentify } from "./model/parser/identify.ts";
 
 export class OAIPMH {
   readonly #request: OAIPMHRequest["request"];
   readonly #parser: OAIPMHParser;
 
   constructor(options: OAIPMHRequestConstructorOptions) {
-    this.#request = new OAIPMHRequest(options).request;
+    const oaiPMHParser = new OAIPMHRequest(options);
+    this.#request = oaiPMHParser.request.bind(oaiPMHParser);
     this.#parser = new OAIPMHParser();
   }
 
-  // deno-lint-ignore no-explicit-any
-  #callFnAndWrapError<TParserFn extends (xml: string) => any>(
-    parserFn: TParserFn,
-    xml: string,
-    response: Response,
-  ): ReturnType<TParserFn> {
-    try {
-      return parserFn(xml);
-    } catch (error: unknown) {
-      throw new OAIPMHError(
-        error instanceof Error
-          ? error.message
-          : typeof error === "string"
-          ? error
-          : JSON.stringify(error),
-        { response, cause: error },
-      );
-    }
-  }
+  async identify(
+    requestOptions?: RequestOptions,
+  ): Promise<Result<OAIPMHIdentify>> {
+    const result = await this.#request({ verb: "Identify" }, requestOptions);
 
-  async identify(requestOptions?: RequestOptions): Promise<OAIPMHIdentify> {
-    const res = await this.#request({ verb: "Identify" }, requestOptions);
-
-    return this.#callFnAndWrapError(this.#parser.parseIdentify, ...res);
+    return result.status === STATUS.OK
+      ? this.#parser.parseIdentify(...result.value)
+      : result;
   }
 
   async getRecord(
     identifier: string,
     metadataPrefix: string,
     requestOptions?: RequestOptions,
-  ): Promise<OAIPMHRecord> {
-    const res = await this.#request(
+  ): Promise<Result<OAIPMHRecord>> {
+    const result = await this.#request(
       {
         verb: "GetRecord",
         identifier,
@@ -61,7 +47,9 @@ export class OAIPMH {
       requestOptions,
     );
 
-    return this.#callFnAndWrapError(this.#parser.parseGetRecord, ...res);
+    return result.status === STATUS.OK
+      ? this.#parser.parseGetRecord(...result.value)
+      : result;
   }
 
   // @TODO: fetch combined with AbortController causes minor memory leak here
@@ -69,39 +57,50 @@ export class OAIPMH {
   //        (allegedly the leak is on all platforms)
   //        https://github.com/nodejs/undici/issues/939
   //        Potential fix for Node.js https://nodejs.org/api/util.html#utilabortedsignal-resource
-  async *#list<
-    TCB extends OAIPMHParser[
-      | "parseListSets"
-      | "parseListIdentifiers"
-      | "parseListRecords"
-    ],
-    TReturn = ReturnType<TCB>["records"],
-  >(
-    parseListCallback: TCB,
-    verb: "ListSets" | "ListIdentifiers" | "ListRecords",
+  async *#list<T>(
+    parseListCallback: (
+      xml: string,
+      response: Response,
+    ) => Result<ListResponse<T>>,
+    verb: string,
     requestOptions?: RequestOptions,
     listOptions?: ListOptions,
-  ): AsyncGenerator<TReturn, void> {
-    const resp = await this.#request({ ...listOptions, verb }, requestOptions);
-    let next = this.#callFnAndWrapError(parseListCallback, ...resp);
+  ): AsyncGenerator<T[], Result> {
+    let resumptionToken: ListResponse<unknown>["resumptionToken"] = null;
+    for (;;) {
+      const options = resumptionToken === null
+        ? listOptions
+        : { resumptionToken };
 
-    yield next.records as TReturn;
+      const result = await this.#request({ verb, ...options }, requestOptions);
 
-    while (next.resumptionToken !== null) {
-      const resp = await this.#request(
-        { verb, resumptionToken: next.resumptionToken },
-        requestOptions,
-      );
-      next = this.#callFnAndWrapError(parseListCallback, ...resp);
+      if (result.status !== STATUS.OK) {
+        return result;
+      }
 
-      yield next.records as TReturn;
+      const next = parseListCallback(...result.value);
+
+      if (next.status !== STATUS.OK) {
+        return next;
+      }
+
+      const {
+        value: { records, resumptionToken: nextResumptionToken },
+      } = next;
+
+      yield records;
+
+      resumptionToken = nextResumptionToken;
+      if (resumptionToken === null) {
+        return { status: STATUS.OK, value: undefined };
+      }
     }
   }
 
   listIdentifiers(
     listOptions: ListOptions,
     requestOptions?: RequestOptions,
-  ): AsyncGenerator<OAIPMHHeader[], void> {
+  ): AsyncGenerator<OAIPMHHeader[], Result> {
     return this.#list(
       this.#parser.parseListIdentifiers,
       "ListIdentifiers",
@@ -113,22 +112,21 @@ export class OAIPMH {
   async listMetadataFormats(
     identifier?: string,
     requestOptions?: RequestOptions,
-  ): Promise<OAIPMHMetadataFormat[]> {
-    const res = await this.#request(
+  ): Promise<Result<OAIPMHMetadataFormat[]>> {
+    const result = await this.#request(
       { verb: "ListMetadataFormats", identifier },
       requestOptions,
     );
 
-    return this.#callFnAndWrapError(
-      this.#parser.parseListMetadataFormats,
-      ...res,
-    );
+    return result.status === STATUS.OK
+      ? this.#parser.parseListMetadataFormats(...result.value)
+      : result;
   }
 
   listRecords(
     listOptions: ListOptions,
     requestOptions?: RequestOptions,
-  ): AsyncGenerator<OAIPMHRecord[], void> {
+  ): AsyncGenerator<OAIPMHRecord[], Result> {
     return this.#list(
       this.#parser.parseListRecords,
       "ListRecords",
@@ -137,7 +135,9 @@ export class OAIPMH {
     );
   }
 
-  listSets(requestOptions?: RequestOptions): AsyncGenerator<OAIPMHSet[], void> {
+  listSets(
+    requestOptions?: RequestOptions,
+  ): AsyncGenerator<OAIPMHSet[], Result> {
     return this.#list(this.#parser.parseListSets, "ListSets", requestOptions);
   }
 }

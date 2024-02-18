@@ -1,22 +1,23 @@
 export { OAIPMH } from "./oai_pmh.ts";
-export { OAIPMHError } from "./oai_pmh_error.ts";
 
-export { ValidationError } from "./oai_pmh_parser/error/validation_error.ts";
-export { ParsedOAIPMHError } from "./oai_pmh_parser/error/parsed_oai_pmh_error.ts";
+export { OAIPMHResponseError } from "./error/oai_pmh_response_error.ts";
+export { UnexpectedStatusCodeError } from "./error/unexpected_status_code_error.ts";
+export { ValidationError } from "./error/validation_error.ts";
 
-export type {
-  ListOptions,
-  OAIPMHRequestConstructorOptions,
-  RequestOptions,
-} from "./oai_pmh.model.ts";
+export {
+  type ListOptions,
+  type OAIPMHRequestConstructorOptions,
+  type RequestOptions,
+  STATUS,
+} from "./model/oai_pmh.ts";
 
 export type {
   ParsedXML,
   ParsedXMLRecordValue,
-} from "./oai_pmh_parser/model/parsed_xml.ts";
-export type { OAIPMHErrorCode } from "./oai_pmh_parser/model/error.ts";
-export type { OAIPMHMetadataFormat } from "./oai_pmh_parser/model/metadata_format.ts";
-export type { OAIPMHRecord } from "./oai_pmh_parser/model/record.ts";
-export type { OAIPMHHeader } from "./oai_pmh_parser/model/header.ts";
-export type { OAIPMHIdentify } from "./oai_pmh_parser/model/identify.ts";
-export type { OAIPMHSet } from "./oai_pmh_parser/model/set.ts";
+} from "./model/parser/parsed_xml.ts";
+export type { OAIPMHErrorCode } from "./model/parser/error.ts";
+export type { OAIPMHMetadataFormat } from "./model/parser/metadata_format.ts";
+export type { OAIPMHRecord } from "./model/parser/record.ts";
+export type { OAIPMHHeader } from "./model/parser/header.ts";
+export type { OAIPMHIdentify } from "./model/parser/identify.ts";
+export type { OAIPMHSet } from "./model/parser/set.ts";
