@@ -1,6 +1,6 @@
 # OAI-PMH TypeScript client
 
-[![Version][npm-svg]][npm-url] [![Deno][deno-svg]][deno-url]
+[![Version][npm-svg]][npm-url]
 
 It's an
 [OAI-PMH Version 2.0](https://www.openarchives.org/OAI/openarchivesprotocol.html)
