@@ -38,7 +38,7 @@ const oaiPMH = new OAIPMH({
     "http://bibliotecavirtual.asturias.es/i18n/oai/oai_bibliotecavirtual.asturias.es.cmd",
 });
 
-const g = oaiPmh.listIdentifiers(
+const g = oaiPMH.listIdentifiers(
   { metadataPrefix: "marc21", from: "2015-04-10", until: "2015-10-28" },
   { signal: AbortSignal.timeout(30_000) },
 );
@@ -94,5 +94,3 @@ Documentation via types.
 
 [npm-svg]: https://img.shields.io/npm/v/oai_pmh_v2.svg?style=flat-square
 [npm-url]: https://npmjs.org/package/oai_pmh_v2
-[deno-svg]: https://img.shields.io/badge/deno-land-blueviolet?style=flat-square
-[deno-url]: https://deno.land/x/oai_pmh_v2
