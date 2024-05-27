@@ -47,6 +47,24 @@ function parseResumptionToken(
   return parsedVerb[0].val?.resumptionToken?.[0].val ?? null;
 }
 
+function validationErrorWrap<TReturn>(
+  xml: string,
+  xmlParser: XMLParser,
+  callback: (childNodes: NodeListOf<ChildNode>) => TReturn,
+): NoInfer<TReturn> {
+  const { childNodes } = xmlParser.parse(xml);
+
+  try {
+    return callback(childNodes);
+  } catch (error: unknown) {
+    if (error instanceof InnerValidationError) {
+      throw new ValidationError(error, xml);
+    }
+
+    throw error;
+  }
+}
+
 export class OAIPMHParser {
   readonly #xmlParser: XMLParser;
 
@@ -119,16 +137,11 @@ export class OAIPMHParser {
   };
 
   readonly parseListMetadataFormats = (xml: string): OAIPMHMetadataFormat[] => {
-    const { childNodes } = this.#xmlParser.parse(xml);
-    try {
-      return validateOAIPMHListMetadataFormatsResponse(childNodes);
-    } catch (error: unknown) {
-      if (error instanceof InnerValidationError) {
-        throw new ValidationError(error, xml);
-      }
-
-      throw error;
-    }
+    return validationErrorWrap(
+      xml,
+      this.#xmlParser,
+      validateOAIPMHListMetadataFormatsResponse,
+    );
   };
 
   readonly parseListRecords = (xml: string): ListResponse<OAIPMHRecord> => {

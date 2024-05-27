@@ -19,14 +19,14 @@ type OAIPMHErrorCode =
 
 function isOAIPMHErrorCode(value: string): value is OAIPMHErrorCode {
   return (
-    value === "badArgument" ||
-    value === "badResumptionToken" ||
-    value === "badVerb" ||
-    value === "cannotDisseminateFormat" ||
-    value === "idDoesNotExist" ||
-    value === "noRecordsMatch" ||
-    value === "noMetadataFormats" ||
-    value === "noSetHierarchy"
+    <OAIPMHErrorCode> value === "badArgument" ||
+    <OAIPMHErrorCode> value === "badResumptionToken" ||
+    <OAIPMHErrorCode> value === "badVerb" ||
+    <OAIPMHErrorCode> value === "cannotDisseminateFormat" ||
+    <OAIPMHErrorCode> value === "idDoesNotExist" ||
+    <OAIPMHErrorCode> value === "noRecordsMatch" ||
+    <OAIPMHErrorCode> value === "noMetadataFormats" ||
+    <OAIPMHErrorCode> value === "noSetHierarchy"
   );
 }
 
