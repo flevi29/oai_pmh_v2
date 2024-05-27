@@ -12,20 +12,24 @@ API client package/module for Node.js and Deno.
 npm i oai_pmh_v2
 ```
 
+<!--deno-fmt-ignore-start-->
 > [!IMPORTANT]
 > For Node.js users a
 > [`fetch`](https://developer.mozilla.org/en-US/docs/Web/API/fetch#browser_compatibility)
 > compatible version of the runtime is required, or a polyfill otherwise (like
 > [`node-fetch`](https://github.com/node-fetch/node-fetch?tab=readme-ov-file#providing-global-access)).
+<!--deno-fmt-ignore-end-->
 
 ## Example
 
+<!--deno-fmt-ignore-start-->
 > [!NOTE]
 > It is possible to iterate through the generator with a `for...of`
 > loop, but this way we can only acquire the
 > [`yield`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/yield)
 > -ed values of the generator, the `return` -ed value would be lost, and the
 > `return` -ed value contains the potential error.
+<!--deno-fmt-ignore-end-->
 
 ```typescript
 // `... from "npm:oai_pmh_v2"` for Deno
@@ -64,6 +68,9 @@ for (;;) {
 }
 ```
 
+<!-- TODO: Mention import { setMaxListeners } from "node:events"; setMaxListeners(2000, this.#abortController.signal); -->
+
+<!--deno-fmt-ignore-start-->
 > [!WARNING]
 > When using an `AbortSignal` with any list method
 > (`listIdentifiers`, `listRecords`, `listSets`), there will be some minuscule
@@ -71,6 +78,7 @@ for (;;) {
 > additional listener registered for the signal. Specifically in Node.js this
 > will cause a lot of warnings (after 100 or so loops). This is a fetch API spec
 > limitation, see [issue](https://github.com/nodejs/undici/issues/939).
+<!--deno-fmt-ignore-end-->
 
 ## General shape of parsed data
 

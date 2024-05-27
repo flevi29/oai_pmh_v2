@@ -1,8 +1,11 @@
+import type { ParsedXMLElement } from "./xml.ts";
+import { InnerValidationError } from "../../error/validation_error.ts";
+import { parseToRecordOrString } from "../../parser/xml_parser.ts";
 import {
-  type OAIPMHBaseResponseSharedRecord,
-  validateOAIPMHBaseResponseAndGetValueOfKey,
-} from "./shared.ts";
-import type { ParsedXML } from "./parsed_xml.ts";
+  OAIPMHResponseError,
+  type OAIPMHResponseErrorObject,
+} from "../../error/oai_pmh_response_error.ts";
+import { validateTextNode, validateTextNodeWithAttributes } from "./shared.ts";
 
 type OAIPMHErrorCode =
   | "badArgument"
@@ -27,43 +30,60 @@ function isOAIPMHErrorCode(value: string): value is OAIPMHErrorCode {
   );
 }
 
-type OAIPMHErrorResponse = OAIPMHBaseResponseSharedRecord & {
-  error: {
-    i: number;
-    val?: string;
-    attr: { "@_code": OAIPMHErrorCode };
-  }[];
-};
-
-function isOAIPMHErrorResponse(value: ParsedXML): value is OAIPMHErrorResponse {
-  const error = validateOAIPMHBaseResponseAndGetValueOfKey(value, "error");
-  if (!error) {
-    return false;
+function validateAndGetOAIPMHErrorResponse(
+  error: ParsedXMLElement[],
+  request?: ParsedXMLElement[],
+  responseDate?: ParsedXMLElement[],
+): OAIPMHResponseError {
+  if (error.length === 0) {
+    throw new InnerValidationError(
+      "expected at least one of <OAI-PMH><error> node",
+    );
   }
 
-  for (const errorElem of error) {
-    const { val, attr } = errorElem;
+  const validatedRequest = validateTextNodeWithAttributes(request),
+    validatedResponseDate = validateTextNode(responseDate),
+    errors: OAIPMHResponseErrorObject[] = [];
 
-    if ((val !== undefined && typeof val !== "string") || attr === undefined) {
-      return false;
+  for (const { value, attr } of error) {
+    const parsedValue = value === undefined
+      ? value
+      : parseToRecordOrString(value);
+
+    if (parsedValue instanceof Error) {
+      throw new InnerValidationError(
+        `error parsing <OAI-PMH><error>: ${parsedValue.message}`,
+      );
+    }
+
+    if (typeof parsedValue === "object" || attr === undefined) {
+      throw new InnerValidationError(
+        "expected all <OAI-PMH><error> nodes to either contain nothing or text, and to have attributes",
+      );
     }
 
     const attrEntries = Object.entries(attr);
     if (attrEntries.length !== 1) {
-      return false;
+      throw new InnerValidationError(
+        "expected <OAI-PMH><error> to only have one attribute",
+      );
     }
 
-    const [attrKey, attrVal] = attrEntries[0]!;
-    if (attrKey !== "@_code" || !isOAIPMHErrorCode(attrVal)) {
-      return false;
+    const [attrKey, { value: attrVal }] = attrEntries[0]!;
+    if (attrKey !== "code" || !isOAIPMHErrorCode(attrVal)) {
+      throw new InnerValidationError(
+        'expected <OAI-PMH><error> attribute key to be "code" and its value to be a valid OAI-PMH error code',
+      );
     }
+
+    errors.push({ code: attrVal, text: parsedValue });
   }
 
-  return true;
+  return new OAIPMHResponseError({
+    errors,
+    request: validatedRequest,
+    responseDate: validatedResponseDate,
+  });
 }
 
-export {
-  isOAIPMHErrorResponse,
-  type OAIPMHErrorCode,
-  type OAIPMHErrorResponse,
-};
+export { type OAIPMHErrorCode, validateAndGetOAIPMHErrorResponse };

@@ -1,9 +1,10 @@
-import { oaiPmh, STATUS } from "./shared.ts";
+import { oaiPmh } from "./shared.ts";
 
-const result = await oaiPmh.listMetadataFormats();
+const result = await oaiPmh.listMetadataFormats().catch((error: unknown) => {
+  if (typeof error === "object" && error !== null && "xml" in error) {
+    console.log(error.xml);
+  }
 
-if (result.status === STATUS.OK) {
-  console.log(JSON.stringify(result.value));
-} else {
-  console.error(result.value);
-}
+  throw error;
+});
+console.log(result);

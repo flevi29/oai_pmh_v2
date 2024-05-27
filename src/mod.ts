@@ -4,11 +4,10 @@ export { OAIPMHResponseError } from "./error/oai_pmh_response_error.ts";
 export { UnexpectedStatusCodeError } from "./error/unexpected_status_code_error.ts";
 export { ValidationError } from "./error/validation_error.ts";
 
-export {
-  type ListOptions,
-  type OAIPMHRequestConstructorOptions,
-  type RequestOptions,
-  STATUS,
+export type {
+  ListOptions,
+  OAIPMHRequestConstructorOptions,
+  RequestOptions,
 } from "./model/oai_pmh.ts";
 
 export type {

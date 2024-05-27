@@ -1,11 +1,9 @@
 import { OAIPMHRequest } from "./oai_pmh_request.ts";
 import { type ListResponse, OAIPMHParser } from "./parser/oai_pmh_parser.ts";
-import {
-  type ListOptions,
-  type OAIPMHRequestConstructorOptions,
-  type RequestOptions,
-  type Result,
-  STATUS,
+import type {
+  ListOptions,
+  OAIPMHRequestConstructorOptions,
+  RequestOptions,
 } from "./model/oai_pmh.ts";
 import type { OAIPMHMetadataFormat } from "./model/parser/metadata_format.ts";
 import type { OAIPMHHeader } from "./model/parser/header.ts";
@@ -20,24 +18,20 @@ export class OAIPMH {
   constructor(options: OAIPMHRequestConstructorOptions) {
     const oaiPMHParser = new OAIPMHRequest(options);
     this.#request = oaiPMHParser.request.bind(oaiPMHParser);
-    this.#parser = new OAIPMHParser();
+    this.#parser = new OAIPMHParser(options.domParser ?? DOMParser);
   }
 
-  async identify(
-    requestOptions?: RequestOptions,
-  ): Promise<Result<OAIPMHIdentify>> {
+  async identify(requestOptions?: RequestOptions): Promise<OAIPMHIdentify> {
     const result = await this.#request({ verb: "Identify" }, requestOptions);
 
-    return result.status === STATUS.OK
-      ? this.#parser.parseIdentify(...result.value)
-      : result;
+    return this.#parser.parseIdentify(result);
   }
 
   async getRecord(
     identifier: string,
     metadataPrefix: string,
     requestOptions?: RequestOptions,
-  ): Promise<Result<OAIPMHRecord>> {
+  ): Promise<OAIPMHRecord> {
     const result = await this.#request(
       {
         verb: "GetRecord",
@@ -47,9 +41,7 @@ export class OAIPMH {
       requestOptions,
     );
 
-    return result.status === STATUS.OK
-      ? this.#parser.parseGetRecord(...result.value)
-      : result;
+    return this.#parser.parseGetRecord(result);
   }
 
   // @TODO: fetch combined with AbortController causes minor memory leak here
@@ -58,15 +50,13 @@ export class OAIPMH {
   //        https://github.com/nodejs/undici/issues/939
   //        Potential fix for Node.js https://nodejs.org/api/util.html#utilabortedsignal-resource
   async *#list<T>(
-    parseListCallback: (
-      xml: string,
-      response: Response,
-    ) => Result<ListResponse<T>>,
+    parseListCallback: (xml: string) => ListResponse<T>,
     verb: string,
     requestOptions?: RequestOptions,
     listOptions?: ListOptions,
-  ): AsyncGenerator<T[], Result> {
-    let resumptionToken: ListResponse<unknown>["resumptionToken"] = null;
+  ): AsyncGenerator<T[], void> {
+    let resumptionToken: ListResponse<T>["resumptionToken"] = null;
+
     for (;;) {
       const options = resumptionToken === null
         ? listOptions
@@ -74,25 +64,14 @@ export class OAIPMH {
 
       const result = await this.#request({ verb, ...options }, requestOptions);
 
-      if (result.status !== STATUS.OK) {
-        return result;
-      }
-
-      const next = parseListCallback(...result.value);
-
-      if (next.status !== STATUS.OK) {
-        return next;
-      }
-
-      const {
-        value: { records, resumptionToken: nextResumptionToken },
-      } = next;
+      const { records, resumptionToken: nextResumptionToken } =
+        parseListCallback(result);
 
       yield records;
 
       resumptionToken = nextResumptionToken;
       if (resumptionToken === null) {
-        return { status: STATUS.OK, value: undefined };
+        break;
       }
     }
   }
@@ -100,7 +79,7 @@ export class OAIPMH {
   listIdentifiers(
     listOptions: ListOptions,
     requestOptions?: RequestOptions,
-  ): AsyncGenerator<OAIPMHHeader[], Result> {
+  ): AsyncGenerator<OAIPMHHeader[], void> {
     return this.#list(
       this.#parser.parseListIdentifiers,
       "ListIdentifiers",
@@ -112,21 +91,19 @@ export class OAIPMH {
   async listMetadataFormats(
     identifier?: string,
     requestOptions?: RequestOptions,
-  ): Promise<Result<OAIPMHMetadataFormat[]>> {
+  ): Promise<OAIPMHMetadataFormat[]> {
     const result = await this.#request(
       { verb: "ListMetadataFormats", identifier },
       requestOptions,
     );
 
-    return result.status === STATUS.OK
-      ? this.#parser.parseListMetadataFormats(...result.value)
-      : result;
+    return this.#parser.parseListMetadataFormats(result);
   }
 
   listRecords(
     listOptions: ListOptions,
     requestOptions?: RequestOptions,
-  ): AsyncGenerator<OAIPMHRecord[], Result> {
+  ): AsyncGenerator<OAIPMHRecord[], void> {
     return this.#list(
       this.#parser.parseListRecords,
       "ListRecords",
@@ -135,9 +112,7 @@ export class OAIPMH {
     );
   }
 
-  listSets(
-    requestOptions?: RequestOptions,
-  ): AsyncGenerator<OAIPMHSet[], Result> {
+  listSets(requestOptions?: RequestOptions): AsyncGenerator<OAIPMHSet[], void> {
     return this.#list(this.#parser.parseListSets, "ListSets", requestOptions);
   }
 }

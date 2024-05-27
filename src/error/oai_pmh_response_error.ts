@@ -1,29 +1,34 @@
-import type {
-  OAIPMHErrorCode,
-  OAIPMHErrorResponse,
-} from "../model/parser/error.ts";
+import type { OAIPMHErrorCode } from "../model/parser/error.ts";
+import type { TextNodeWithAttributes } from "../model/parser/shared.ts";
 
-export class OAIPMHResponseError extends Error {
-  override readonly name = "OAIPMHResponseError";
-  override readonly cause: { code: OAIPMHErrorCode; text?: string }[];
-  readonly response: Response;
+// TODO: rename?
+type OAIPMHResponseErrorObject = { code: OAIPMHErrorCode; text?: string };
+type OAIPMHResponseErrorData = {
+  errors: OAIPMHResponseErrorObject[];
+  request: TextNodeWithAttributes;
+  responseDate: string;
+};
 
-  constructor({ error }: OAIPMHErrorResponse, response: Response) {
-    const mappedErrors = error.map((v) => ({
-      code: v.attr["@_code"],
-      text: v.val,
-    }));
+class OAIPMHResponseError extends Error {
+  override name = "OAIPMHResponseError";
+  override cause: OAIPMHResponseErrorData;
 
+  constructor(errorData: OAIPMHResponseErrorData) {
     super(
       "OAI-PMH provider returned error(s):" +
-        mappedErrors
+        errorData.errors
           .map(
             (v) => `\n\t${v.code}${v.text !== undefined ? `: ${v.text}` : ""}`,
           )
           .join(""),
     );
 
-    this.cause = mappedErrors;
-    this.response = response;
+    this.cause = errorData;
   }
 }
+
+export {
+  OAIPMHResponseError,
+  type OAIPMHResponseErrorData,
+  type OAIPMHResponseErrorObject,
+};

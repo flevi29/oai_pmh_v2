@@ -1,88 +1,90 @@
-import {
-  isStringWithNoAttributeTuple,
-  type OAIPMHBaseResponseSharedRecord,
-  type StringWithNoAttributeTuple,
-  validateOAIPMHBaseResponseAndGetValueOfKey,
-} from "./shared.ts";
-import type { ParsedXML, ParsedXMLRecordValue } from "./parsed_xml.ts";
+import { extractKeysAndValidate } from "./shared.ts";
+import { validateOAIPMHResponseBaseValueAndGetValueOfKey } from "./base_oai_pmh.ts";
+import { parseToRecordOrString } from "../../parser/xml_parser.ts";
+import type { ParsedXMLElement } from "./xml.ts";
+import { InnerValidationError } from "../../error/validation_error.ts";
 
 type OAIPMHMetadataFormat = {
-  i: number;
-  val: {
-    metadataPrefix: StringWithNoAttributeTuple;
-    schema: StringWithNoAttributeTuple;
-    metadataNamespace: StringWithNoAttributeTuple;
-  };
+  metadataPrefix: string;
+  schema: string;
+  metadataNamespace: string;
 };
 
-function isOAIPMHMetadataFormat(
-  value: ParsedXMLRecordValue,
-): value is OAIPMHMetadataFormat {
-  const { val, attr } = value;
-
-  if (
-    attr !== undefined ||
-    val === undefined ||
-    typeof val === "string" ||
-    Object.keys(val).length !== 3
-  ) {
-    return false;
+function validateOAIPMHMetadataFormat({
+  attr,
+  value,
+}: ParsedXMLElement): OAIPMHMetadataFormat {
+  if (attr !== undefined || value === undefined) {
+    throw new Error("todo");
   }
 
-  const { metadataPrefix, schema, metadataNamespace } = val;
+  const result = parseToRecordOrString(value);
 
-  return (
-    metadataPrefix !== undefined &&
-    isStringWithNoAttributeTuple(metadataPrefix) &&
-    schema !== undefined &&
-    isStringWithNoAttributeTuple(schema) &&
-    metadataNamespace !== undefined &&
-    isStringWithNoAttributeTuple(metadataNamespace)
+  if (result instanceof Error) {
+    throw new InnerValidationError(
+      `error parsing <OAI-PMH><ListMetadataFormats><metadataFormat> contents: ${result.message}`,
+    );
+  }
+
+  if (typeof result !== "object") {
+    throw new InnerValidationError(
+      "expected <OAI-PMH><ListMetadataFormats><metadataFormat> node to have child nodes other than text",
+    );
+  }
+
+  const extractResult = extractKeysAndValidate(
+    result,
+    "metadataPrefix",
+    "schema",
+    "metadataNamespace",
   );
+
+  if (extractResult instanceof Error) {
+    throw new InnerValidationError(
+      `error parsing <OAI-PMH><ListMetadataFormats><metadataFormat> contents: ${extractResult.message}`,
+    );
+  }
+
+  return extractResult;
 }
 
-type OAIPMHListMetadataFormatsResponse = OAIPMHBaseResponseSharedRecord & {
-  ListMetadataFormats: [
-    {
-      i: number;
-      val: { metadataFormat: OAIPMHMetadataFormat[] };
-    },
-  ];
-};
-
-function isOAIPMHListMetadataFormatsResponse(
-  value: ParsedXML,
-): value is OAIPMHListMetadataFormatsResponse {
-  const ListMetadataFormats = validateOAIPMHBaseResponseAndGetValueOfKey(
-    value,
+function validateOAIPMHListMetadataFormatsResponse(
+  childNodeList: NodeListOf<ChildNode>,
+): OAIPMHMetadataFormat[] {
+  const listMetadataFormats = validateOAIPMHResponseBaseValueAndGetValueOfKey(
+    childNodeList,
     "ListMetadataFormats",
   );
-  if (!ListMetadataFormats) {
-    return false;
+
+  const parseResult = parseToRecordOrString(listMetadataFormats);
+
+  if (parseResult instanceof Error) {
+    throw new InnerValidationError(
+      `error parsing <OAI-PMH><ListMetadataFormats>: ${parseResult.message}`,
+    );
   }
 
-  const { val, attr } = ListMetadataFormats[0]!;
-  if (
-    attr !== undefined ||
-    val === undefined ||
-    typeof val === "string" ||
-    Object.keys(val).length !== 1
-  ) {
-    return false;
+  if (typeof parseResult !== "object") {
+    throw new InnerValidationError(
+      "expected <OAI-PMH><ListMetadataFormats> node to have child nodes other than text",
+    );
   }
 
-  const { metadataFormat } = val;
-  if (metadataFormat === undefined) {
-    return false;
+  const { metadataFormat } = parseResult;
+  if (Object.keys(parseResult).length !== 1 || metadataFormat === undefined) {
+    throw new InnerValidationError(
+      "expected one of <OAI-PMH><ListMetadataFormats><metadataFormat> node",
+    );
   }
 
+  const metadataFormatList: OAIPMHMetadataFormat[] = [];
   for (const metadataFormatElem of metadataFormat) {
-    if (!isOAIPMHMetadataFormat(metadataFormatElem)) {
-      return false;
-    }
+    const validationResult = validateOAIPMHMetadataFormat(metadataFormatElem);
+
+    metadataFormatList.push(validationResult);
   }
 
-  return true;
+  return metadataFormatList;
 }
 
-export { isOAIPMHListMetadataFormatsResponse, type OAIPMHMetadataFormat };
+export { type OAIPMHMetadataFormat, validateOAIPMHListMetadataFormatsResponse };

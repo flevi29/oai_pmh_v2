@@ -1,9 +1,7 @@
 import { UnexpectedStatusCodeError } from "./error/unexpected_status_code_error.ts";
-import {
-  type OAIPMHRequestConstructorOptions,
-  type RequestOptions,
-  type RequestResult,
-  STATUS,
+import type {
+  OAIPMHRequestConstructorOptions,
+  RequestOptions,
 } from "./model/oai_pmh.ts";
 
 type SearchParamsRecord = Record<string, string | undefined>;
@@ -72,45 +70,29 @@ export class OAIPMHRequest {
   request = async (
     searchParams: SearchParamsRecord,
     options?: RequestOptions,
-  ): Promise<RequestResult> => {
+  ): Promise<string> => {
     const signal = options?.signal;
 
-    const { aborted, value: responseResult } = await fetch(
+    const response = await fetch(
       getURLWithParameters(this.#baseURL, searchParams),
       {
         signal: signal,
         headers: this.#headers,
         credentials: "omit",
+        // @TODO: Maybe we shouldn't type check the npm build? Just type check with Deno?
         // @ts-ignore: No cache in Node.js fetch type definitions
         cache: "no-store",
       },
-    )
-      .then((value) => ({ aborted: false as const, value }))
-      .catch((reason) => {
-        if (
-          signal?.aborted &&
-          (reason.name === "AbortError" || reason === signal.reason)
-        ) {
-          return { aborted: true as const, value: reason };
-        }
+    );
 
-        throw reason;
-      });
-
-    if (aborted) {
-      return { status: STATUS.ABORTED, value: responseResult };
-    }
-
-    const responseError = await checkResponse(responseResult);
+    const responseError = await checkResponse(response);
+    // @TODO: Should there be a retry thingy here? Research whether there are better options!
     if (responseError !== null) {
       const retry = options?.retry ?? 3;
       const retryInterval = options?.retryInterval ?? 1000;
 
       if (responseError.response.status < 500 || retry < 1) {
-        return {
-          status: STATUS.UNEXPECTED_STATUS_CODE_ERROR,
-          value: responseError,
-        };
+        throw responseError;
       }
 
       if (this.#debugLogRetries) {
@@ -131,9 +113,6 @@ export class OAIPMHRequest {
       });
     }
 
-    return {
-      status: STATUS.OK,
-      value: [await responseResult.text(), responseResult],
-    };
+    return await response.text();
   };
 }

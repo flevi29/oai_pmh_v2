@@ -1,20 +1,24 @@
-import type { ParsedXML } from "../model/parser/parsed_xml.ts";
+class InnerValidationError extends Error {
+  override name = "InnerValidationError";
 
-export class ValidationError extends Error {
-  override readonly name = "ValidationError";
-  override readonly cause: { rawXML: string; parsedXML?: ParsedXML };
-  readonly response: Response;
-
-  constructor(
-    rawXML: string,
-    parsedXML: ParsedXML | undefined,
-    response: Response,
-  ) {
-    super(
-      "received data does not conform to OAI-PMH 2.0 (http://www.openarchives.org/OAI/openarchivesprotocol.html)",
-    );
-
-    this.cause = { rawXML, parsedXML };
-    this.response = response;
+  constructor(message: string) {
+    super(message);
   }
 }
+
+class ValidationError extends Error {
+  override name = "ValidationError";
+  override cause: InnerValidationError;
+  xml: string;
+
+  constructor(error: InnerValidationError, xml: string) {
+    super(
+      error.message +
+        "\n(hint: inspect `xml` property for the whole XML document)",
+    );
+    this.cause = error;
+    this.xml = xml;
+  }
+}
+
+export { InnerValidationError, ValidationError };
