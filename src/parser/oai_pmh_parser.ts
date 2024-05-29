@@ -4,7 +4,11 @@ import {
   ValidationError,
 } from "../error/validation_error.ts";
 import { type OAIPMHIdentify } from "../model/parser/identify.ts";
-import { validateListRecordsResponse } from "../model/parser/record.ts";
+import {
+  type OAIPMHRecord,
+  parseGetRecordResponse,
+  parseListRecordsResponse,
+} from "../model/parser/record.ts";
 import {
   type OAIPMHHeader,
   parseListIdentifiersResponse,
@@ -60,23 +64,8 @@ export class OAIPMHParser {
     // return { status, value: value.Identify[0] };
   };
 
-  readonly parseGetRecord = (xml: string): any => {
-    throw new Error("unimplemented");
-    // const oaiResponse = this.#parseAndValidateOAIPMHXML(xml, response);
-
-    // if (oaiResponse.status !== STATUS.OK) {
-    //   return oaiResponse;
-    // }
-
-    // const { status, value } = oaiResponse;
-    // if (!isOAIPMHGetRecordResponse(value)) {
-    //   return {
-    //     status: STATUS.VALIDATION_ERROR,
-    //     value: new ValidationError(xml, value, response),
-    //   };
-    // }
-
-    // return { status, value: value.GetRecord[0].val.record[0] };
+  readonly parseGetRecord = (xml: string): OAIPMHRecord => {
+    return validationErrorWrap(xml, this.#xmlParser, parseGetRecordResponse);
   };
 
   readonly parseListIdentifiers = (xml: string): ListResponse<OAIPMHHeader> => {
@@ -95,35 +84,8 @@ export class OAIPMHParser {
     );
   };
 
-  readonly parseListRecords = (xml: string): any => {
-    const asd = validationErrorWrap(
-      xml,
-      this.#xmlParser,
-      validateListRecordsResponse,
-    );
-    console.log(asd);
-    // const oaiResponse = this.#parseAndValidateOAIPMHXML(xml, response);
-
-    // if (oaiResponse.status !== STATUS.OK) {
-    //   return oaiResponse;
-    // }
-
-    // const { status, value } = oaiResponse;
-    // if (!isOAIPMHListRecordsResponse(value)) {
-    //   return {
-    //     status: STATUS.VALIDATION_ERROR,
-    //     value: new ValidationError(xml, value, response),
-    //   };
-    // }
-
-    // const { ListRecords } = value;
-    // return {
-    //   status,
-    //   value: {
-    //     records: ListRecords[0].val.record,
-    //     resumptionToken: parseResumptionToken(ListRecords),
-    //   },
-    // };
+  readonly parseListRecords = (xml: string): ListResponse<OAIPMHRecord> => {
+    return validationErrorWrap(xml, this.#xmlParser, parseListRecordsResponse);
   };
 
   readonly parseListSets = (xml: string): ListResponse<OAIPMHSet> => {

@@ -93,6 +93,22 @@ function parseKeyAsTextArray(
   return parseTextNodeArray(recordValue);
 }
 
+function parseToNodeList(
+  parsedXMLElementArray: ParsedXMLElement[],
+): NodeListOf<ChildNode> | Error {
+  if (parsedXMLElementArray.length !== 1) {
+    return new Error("todo");
+  }
+
+  const { attr, value } = parsedXMLElementArray[0]!;
+
+  if (attr !== undefined || value === undefined) {
+    return new Error("todo");
+  }
+
+  return value;
+}
+
 function parseResumptionToken(
   resumptionToken?: ParsedXMLElement[],
 ): string | null | Error {
@@ -141,5 +157,6 @@ export {
   parseTextNode,
   parseTextNodeArray,
   parseTextNodeWithAttributes,
+  parseToNodeList,
   type TextNodeWithAttributes,
 };

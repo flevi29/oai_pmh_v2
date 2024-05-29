@@ -18,6 +18,7 @@ type OAIPMHHeader = {
 
 function parseHeader({ attr, value }: ParsedXMLElement): OAIPMHHeader {
   if (value === undefined) {
+    // @TODO: This is not necessarily ListIdentifiers
     throw new InnerValidationError(
       "expected <OAI-PMH><ListIdentifiers><header> to not be empty",
     );
@@ -60,7 +61,7 @@ function parseHeader({ attr, value }: ParsedXMLElement): OAIPMHHeader {
     );
   }
 
-  const returnVal: OAIPMHHeader = { identifier, datestamp };
+  const oaiPMHHeader: OAIPMHHeader = { identifier, datestamp };
 
   const { setSpec } = parsedHeader;
   if (setSpec !== undefined) {
@@ -72,7 +73,7 @@ function parseHeader({ attr, value }: ParsedXMLElement): OAIPMHHeader {
       );
     }
 
-    returnVal.setSpec = parsedSetSpec;
+    oaiPMHHeader.setSpec = parsedSetSpec;
   }
 
   if (attr !== undefined) {
@@ -83,10 +84,10 @@ function parseHeader({ attr, value }: ParsedXMLElement): OAIPMHHeader {
       );
     }
 
-    returnVal.isDeleted = true;
+    oaiPMHHeader.isDeleted = true;
   }
 
-  return returnVal;
+  return oaiPMHHeader;
 }
 
 function parseListIdentifiersResponse(
@@ -139,4 +140,4 @@ function parseListIdentifiersResponse(
   };
 }
 
-export { type OAIPMHHeader, parseListIdentifiersResponse };
+export { type OAIPMHHeader, parseHeader, parseListIdentifiersResponse };
