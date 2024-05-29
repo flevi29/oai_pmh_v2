@@ -17,7 +17,7 @@ import {
   type OAIPMHMetadataFormat,
   validateListMetadataFormatsResponse,
 } from "../model/parser/metadata_format.ts";
-import { type OAIPMHSet } from "../model/parser/set.ts";
+import { type OAIPMHSet, parseListSetsResponse } from "../model/parser/set.ts";
 import type { ListResponse } from "../model/parser/shared.ts";
 
 function validationErrorWrap<TReturn>(
@@ -89,28 +89,6 @@ export class OAIPMHParser {
   };
 
   readonly parseListSets = (xml: string): ListResponse<OAIPMHSet> => {
-    throw new Error("unimplemented");
-    // const oaiResponse = this.#parseAndValidateOAIPMHXML(xml, response);
-
-    // if (oaiResponse.status !== STATUS.OK) {
-    //   return oaiResponse;
-    // }
-
-    // const { status, value } = oaiResponse;
-    // if (!isOAIPMHListSetsResponse(value)) {
-    //   return {
-    //     status: STATUS.VALIDATION_ERROR,
-    //     value: new ValidationError(xml, value, response),
-    //   };
-    // }
-
-    // const { ListSets } = value;
-    // return {
-    //   status,
-    //   value: {
-    //     records: ListSets[0].val?.set,
-    //     resumptionToken: parseResumptionToken(ListSets),
-    //   },
-    // };
+    return validationErrorWrap(xml, this.#xmlParser, parseListSetsResponse);
   };
 }

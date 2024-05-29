@@ -7,8 +7,10 @@ const result = await oaiPmh.getRecord(
 
 if (result.metadata !== undefined) {
   for (
-    const asd of Array.from(result.metadata, (v) =>
-      (<Element> v).outerHTML)
+    const asd of Array.from(
+      result.metadata,
+      (v) => (<Element> v).outerHTML,
+    )
   ) {
     console.log(asd);
   }
