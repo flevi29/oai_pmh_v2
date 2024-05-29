@@ -1,5 +1,5 @@
-import { extractKeysAndValidate } from "./shared.ts";
-import { validateOAIPMHResponseBaseValueAndGetValueOfKey } from "./base_oai_pmh.ts";
+import { parseKeyAsText } from "./shared.ts";
+import { parseOAIPMHResponseBase } from "./base_oai_pmh.ts";
 import { parseToRecordOrString } from "../../parser/xml_parser.ts";
 import type { ParsedXMLElement } from "./xml.ts";
 import { InnerValidationError } from "../../error/validation_error.ts";
@@ -10,12 +10,14 @@ type OAIPMHMetadataFormat = {
   metadataNamespace: string;
 };
 
-function validateOAIPMHMetadataFormat({
+function validateMetadataFormat({
   attr,
   value,
 }: ParsedXMLElement): OAIPMHMetadataFormat {
   if (attr !== undefined || value === undefined) {
-    throw new Error("todo");
+    throw new InnerValidationError(
+      "expected <OAI-PMH><ListMetadataFormats><metadataFormat> to have no attributes and not to be empty",
+    );
   }
 
   const result = parseToRecordOrString(value);
@@ -28,30 +30,41 @@ function validateOAIPMHMetadataFormat({
 
   if (typeof result !== "object") {
     throw new InnerValidationError(
-      "expected <OAI-PMH><ListMetadataFormats><metadataFormat> node to have child nodes other than text",
+      "expected <OAI-PMH><ListMetadataFormats><metadataFormat> node to have element child nodes",
     );
   }
 
-  const extractResult = extractKeysAndValidate(
-    result,
-    "metadataPrefix",
-    "schema",
-    "metadataNamespace",
-  );
+  const metadataPrefix = parseKeyAsText(result, "metadataPrefix");
 
-  if (extractResult instanceof Error) {
+  if (metadataPrefix instanceof Error) {
     throw new InnerValidationError(
-      `error parsing <OAI-PMH><ListMetadataFormats><metadataFormat> contents: ${extractResult.message}`,
+      `error parsing <OAI-PMH><ListMetadataFormats><metadataFormat><metadataPrefix> contents: ${metadataPrefix.message}`,
     );
   }
 
-  return extractResult;
+  const schema = parseKeyAsText(result, "schema");
+
+  if (schema instanceof Error) {
+    throw new InnerValidationError(
+      `error parsing <OAI-PMH><ListMetadataFormats><metadataFormat><schema> contents: ${schema.message}`,
+    );
+  }
+
+  const metadataNamespace = parseKeyAsText(result, "metadataNamespace");
+
+  if (metadataNamespace instanceof Error) {
+    throw new InnerValidationError(
+      `error parsing <OAI-PMH><ListMetadataFormats><metadataFormat><metadataNamespace> contents: ${metadataNamespace.message}`,
+    );
+  }
+
+  return { metadataPrefix, schema, metadataNamespace };
 }
 
-function validateOAIPMHListMetadataFormatsResponse(
+function validateListMetadataFormatsResponse(
   childNodeList: NodeListOf<ChildNode>,
 ): OAIPMHMetadataFormat[] {
-  const listMetadataFormats = validateOAIPMHResponseBaseValueAndGetValueOfKey(
+  const listMetadataFormats = parseOAIPMHResponseBase(
     childNodeList,
     "ListMetadataFormats",
   );
@@ -66,25 +79,18 @@ function validateOAIPMHListMetadataFormatsResponse(
 
   if (typeof parseResult !== "object") {
     throw new InnerValidationError(
-      "expected <OAI-PMH><ListMetadataFormats> node to have child nodes other than text",
+      "expected <OAI-PMH><ListMetadataFormats> node to have element child nodes",
     );
   }
 
   const { metadataFormat } = parseResult;
   if (Object.keys(parseResult).length !== 1 || metadataFormat === undefined) {
     throw new InnerValidationError(
-      "expected one of <OAI-PMH><ListMetadataFormats><metadataFormat> node",
+      "expected <OAI-PMH><ListMetadataFormats> to have only <metadataFormat> element child nodes",
     );
   }
 
-  const metadataFormatList: OAIPMHMetadataFormat[] = [];
-  for (const metadataFormatElem of metadataFormat) {
-    const validationResult = validateOAIPMHMetadataFormat(metadataFormatElem);
-
-    metadataFormatList.push(validationResult);
-  }
-
-  return metadataFormatList;
+  return metadataFormat.map(validateMetadataFormat);
 }
 
-export { type OAIPMHMetadataFormat, validateOAIPMHListMetadataFormatsResponse };
+export { type OAIPMHMetadataFormat, validateListMetadataFormatsResponse };

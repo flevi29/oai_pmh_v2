@@ -1,123 +1,76 @@
-import { isOAIPMHHeader, type OAIPMHHeader } from "./header.ts";
-import {
-  isOAIPMHResumptionToken,
-  type OAIPMHBaseResponseSharedRecord,
-  type OAIPMHResumptionToken,
-  validateOAIPMHBaseResponseAndGetValueOfKey,
-} from "./shared.ts";
-import { parsedXMLHasKeysBetweenLengths } from "./util.ts";
-import type { ParsedXML, ParsedXMLRecordValue } from "./parsed_xml.ts";
+import { parseOAIPMHResponseBase } from "./base_oai_pmh.ts";
+import { parseToRecordOrString } from "../../parser/xml_parser.ts";
+import { InnerValidationError } from "../../error/validation_error.ts";
+import type { ParsedXMLElement } from "./xml.ts";
 
-type OAIPMHRecord = {
-  i: number;
-  val: {
-    header: [OAIPMHHeader];
-    metadata?: [ParsedXMLRecordValue];
-    about?: ParsedXMLRecordValue[];
-  };
-};
+type SOAIPMHRecord = {};
 
-function isOAIPMHRecord(value: ParsedXMLRecordValue): value is OAIPMHRecord {
-  const { val, attr } = value;
-  if (
-    val === undefined ||
-    typeof val === "string" ||
-    !parsedXMLHasKeysBetweenLengths(val, 1, 3) ||
-    attr !== undefined
-  ) {
-    return false;
+function validateRecord({ attr, value }: ParsedXMLElement): SOAIPMHRecord {
+  if (attr !== undefined || value === undefined) {
+    throw new InnerValidationError(
+      "expected <OAI-PMH><ListRecords><record> to have no attributes and not to be empty",
+    );
   }
 
-  const { header, metadata } = val;
-  return (
-    header !== undefined &&
-    header.length === 1 &&
-    isOAIPMHHeader(header[0]!) &&
-    (metadata === undefined || metadata.length === 1)
-  );
+  const result = parseToRecordOrString(value);
+
+  if (result instanceof Error) {
+    throw new InnerValidationError(
+      `error parsing <OAI-PMH><ListRecords><record> contents: ${result.message}`,
+    );
+  }
+
+  if (typeof result !== "object") {
+    throw new InnerValidationError(
+      "expected <OAI-PMH><ListRecords><record> node to have element child nodes",
+    );
+  }
+
+  throw new InnerValidationError("unimplemented");
 }
 
-type OAIPMHGetRecordResponse = OAIPMHBaseResponseSharedRecord & {
-  GetRecord: [{ i: number; val: { record: [OAIPMHRecord] } }];
-};
+function validateListRecordsResponse(
+  childNodeList: NodeListOf<ChildNode>,
+): SOAIPMHRecord[] {
+  const listRecords = parseOAIPMHResponseBase(childNodeList, "ListRecords");
 
-function isOAIPMHGetRecordResponse(
-  value: ParsedXML,
-): value is OAIPMHGetRecordResponse {
-  const GetRecord = validateOAIPMHBaseResponseAndGetValueOfKey(
-    value,
-    "GetRecord",
-  );
-  if (!GetRecord) {
-    return false;
+  const parseResult = parseToRecordOrString(listRecords);
+
+  if (parseResult instanceof Error) {
+    throw new InnerValidationError(
+      `error parsing <OAI-PMH><ListRecords>: ${parseResult.message}`,
+    );
   }
 
-  const { val, attr } = GetRecord[0]!;
-  if (
-    val === undefined ||
-    typeof val === "string" ||
-    Object.keys(val).length !== 1 ||
-    attr !== undefined
-  ) {
-    return false;
+  if (typeof parseResult !== "object") {
+    throw new InnerValidationError(
+      "expected <OAI-PMH><ListRecords> node to have element child nodes",
+    );
   }
 
-  const { record } = val;
-  return (
-    record !== undefined && record.length === 1 && isOAIPMHRecord(record[0]!)
-  );
-}
-
-type OAIPMHListRecordsResponse = OAIPMHBaseResponseSharedRecord & {
-  ListRecords: [
-    {
-      i: number;
-      val: { record: OAIPMHRecord[]; resumptionToken?: OAIPMHResumptionToken };
-    },
-  ];
-};
-
-function isOAIPMHListRecordsResponse(
-  value: ParsedXML,
-): value is OAIPMHListRecordsResponse {
-  const ListRecords = validateOAIPMHBaseResponseAndGetValueOfKey(
-    value,
-    "ListRecords",
-  );
-  if (!ListRecords) {
-    return false;
+  const { length } = Object.keys(parseResult);
+  if (length < 1 || length > 2) {
+    throw new InnerValidationError(
+      "expected <OAI-PMH><ListRecords> to have only 2 possible types of element child nodes",
+    );
   }
 
-  const { val, attr } = ListRecords[0]!;
-  if (
-    val === undefined ||
-    typeof val === "string" ||
-    !parsedXMLHasKeysBetweenLengths(val, 1, 2) ||
-    attr !== undefined
-  ) {
-    return false;
+  const { record, resumptionToken } = parseResult;
+  if (record === undefined) {
+    throw new InnerValidationError(
+      "expected <OAI-PMH><ListRecords> to have <record> element child nodes",
+    );
   }
 
-  const { record, resumptionToken } = val;
-
-  if (
-    record === undefined ||
-    (resumptionToken !== undefined && !isOAIPMHResumptionToken(resumptionToken))
-  ) {
-    return false;
-  }
-
-  for (const recordElem of record) {
-    if (!isOAIPMHRecord(recordElem)) {
-      return false;
+  if (resumptionToken !== undefined) {
+    if (resumptionToken.length !== 1) {
+      throw new Error("todo");
     }
+
+    //
   }
 
-  return true;
+  return record.map(validateRecord);
 }
 
-export {
-  isOAIPMHGetRecordResponse,
-  isOAIPMHListRecordsResponse,
-  type OAIPMHRecord,
-};
+export { validateListRecordsResponse };

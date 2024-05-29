@@ -34,36 +34,36 @@ function validateOAIPMHResponseBaseAndGetValue(
   return value;
 }
 
-function validateOAIPMHResponseBaseValueAndGetValueOfKey(
+function parseOAIPMHResponseBase(
   childNodeList: NodeListOf<ChildNode>,
   key: string,
 ): NodeListOf<ChildNode> {
   const oaiPMH = validateOAIPMHResponseBaseAndGetValue(childNodeList);
 
-  const result = parseToRecordOrString(oaiPMH);
+  const parseResult = parseToRecordOrString(oaiPMH);
 
-  if (result instanceof Error) {
+  if (parseResult instanceof Error) {
     throw new InnerValidationError(
-      `error parsing <OAI-PMH> contents: ${result.message}`,
+      `error parsing <OAI-PMH> contents: ${parseResult.message}`,
     );
   }
 
-  if (typeof result !== "object") {
+  if (typeof parseResult !== "object") {
     throw new InnerValidationError(
       "expected <OAI-PMH> node to have child nodes other than text",
     );
   }
 
-  if (Object.keys(result).length !== 3) {
+  if (Object.keys(parseResult).length !== 3) {
     throw new InnerValidationError(
       "expected <OAI-PMH> node to have 3 child nodes",
     );
   }
 
-  const { [key]: responseValue, error, request, responseDate } = result;
+  const { [key]: responseValue, error } = parseResult;
 
   if (error !== undefined) {
-    throw validateAndGetOAIPMHErrorResponse(error, request, responseDate);
+    throw validateAndGetOAIPMHErrorResponse(error, parseResult);
   }
 
   if (responseValue === undefined || responseValue.length !== 1) {
@@ -82,4 +82,4 @@ function validateOAIPMHResponseBaseValueAndGetValueOfKey(
   return value;
 }
 
-export { validateOAIPMHResponseBaseValueAndGetValueOfKey };
+export { parseOAIPMHResponseBase };

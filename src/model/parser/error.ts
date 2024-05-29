@@ -1,11 +1,8 @@
-import type { ParsedXMLElement } from "./xml.ts";
+import type { ParsedXMLElement, ParsedXMLRecord } from "./xml.ts";
 import { InnerValidationError } from "../../error/validation_error.ts";
 import { parseToRecordOrString } from "../../parser/xml_parser.ts";
-import {
-  OAIPMHResponseError,
-  type OAIPMHResponseErrorObject,
-} from "../../error/oai_pmh_response_error.ts";
-import { validateTextNode, validateTextNodeWithAttributes } from "./shared.ts";
+import { OAIPMHResponseError } from "../../error/oai_pmh_response_error.ts";
+import { parseKeyAsText, parseKeyAsTextWithAttributes } from "./shared.ts";
 
 type OAIPMHErrorCode =
   | "badArgument"
@@ -32,8 +29,7 @@ function isOAIPMHErrorCode(value: string): value is OAIPMHErrorCode {
 
 function validateAndGetOAIPMHErrorResponse(
   error: ParsedXMLElement[],
-  request?: ParsedXMLElement[],
-  responseDate?: ParsedXMLElement[],
+  parseResult: ParsedXMLRecord,
 ): OAIPMHResponseError {
   if (error.length === 0) {
     throw new InnerValidationError(
@@ -41,11 +37,19 @@ function validateAndGetOAIPMHErrorResponse(
     );
   }
 
-  const validatedRequest = validateTextNodeWithAttributes(request),
-    validatedResponseDate = validateTextNode(responseDate),
-    errors: OAIPMHResponseErrorObject[] = [];
+  const request = parseKeyAsTextWithAttributes(parseResult, "request");
 
-  for (const { value, attr } of error) {
+  if (request instanceof Error) {
+    throw new InnerValidationError(`todo`);
+  }
+
+  const responseDate = parseKeyAsText(parseResult, "responseDate");
+
+  if (responseDate instanceof Error) {
+    throw new InnerValidationError(`todo`);
+  }
+
+  const errors = error.map(({ value, attr }) => {
     const parsedValue = value === undefined
       ? value
       : parseToRecordOrString(value);
@@ -76,13 +80,13 @@ function validateAndGetOAIPMHErrorResponse(
       );
     }
 
-    errors.push({ code: attrVal, text: parsedValue });
-  }
+    return { code: attrVal, text: parsedValue };
+  });
 
   return new OAIPMHResponseError({
     errors,
-    request: validatedRequest,
-    responseDate: validatedResponseDate,
+    request,
+    responseDate,
   });
 }
 

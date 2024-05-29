@@ -1,114 +1,142 @@
 import {
-  isOAIPMHResumptionToken,
-  isStringWithNoAttribute,
-  isStringWithNoAttributeTuple,
-  type OAIPMHBaseResponseSharedRecord,
-  type OAIPMHResumptionToken,
-  type StringWithNoAttribute,
-  type StringWithNoAttributeTuple,
-  validateOAIPMHBaseResponseAndGetValueOfKey,
+  type ListResponse,
+  parseKeyAsText,
+  parseResumptionToken,
+  parseTextNodeArray,
 } from "./shared.ts";
-import { parsedXMLHasKeysBetweenLengths } from "./util.ts";
-import type { ParsedXML, ParsedXMLRecordValue } from "./parsed_xml.ts";
+import { InnerValidationError } from "../../error/validation_error.ts";
+import { parseToRecordOrString } from "../../parser/xml_parser.ts";
+import { parseOAIPMHResponseBase } from "./base_oai_pmh.ts";
+import type { ParsedXMLElement } from "./xml.ts";
 
 type OAIPMHHeader = {
-  i: number;
-  attr?: { "@_status": "deleted" };
-  val: {
-    identifier: StringWithNoAttributeTuple;
-    datestamp: StringWithNoAttributeTuple;
-    setSpec?: StringWithNoAttribute[];
-  };
+  isDeleted?: true;
+  identifier: string;
+  datestamp: string;
+  setSpec?: string[];
 };
 
-function isOAIPMHHeader(value: ParsedXMLRecordValue): value is OAIPMHHeader {
-  const { attr, val } = value;
+function parseHeader({ attr, value }: ParsedXMLElement): OAIPMHHeader {
+  if (value === undefined) {
+    throw new InnerValidationError(
+      "expected <OAI-PMH><ListIdentifiers><header> to not be empty",
+    );
+  }
+
+  const parsedHeader = parseToRecordOrString(value);
+
+  if (parsedHeader instanceof Error) {
+    throw new InnerValidationError(
+      `error parsing <OAI-PMH><ListIdentifiers><header> contents: ${parsedHeader.message}`,
+    );
+  }
+
+  if (typeof parsedHeader !== "object") {
+    throw new InnerValidationError(
+      "expected <OAI-PMH><ListIdentifiers><header> node to have element child nodes",
+    );
+  }
+
+  const { length } = Object.keys(parsedHeader);
+  if (length < 2 || length > 3) {
+    throw new InnerValidationError(
+      "expected <OAI-PMH><ListIdentifiers><header> to have only 2 or 3 possible types of element child nodes",
+    );
+  }
+
+  const identifier = parseKeyAsText(parsedHeader, "identifier");
+
+  if (identifier instanceof Error) {
+    throw new InnerValidationError(
+      `error parsing <OAI-PMH><ListIdentifiers><header><identifier>: ${identifier.message}`,
+    );
+  }
+
+  const datestamp = parseKeyAsText(parsedHeader, "datestamp");
+
+  if (datestamp instanceof Error) {
+    throw new InnerValidationError(
+      `error parsing <OAI-PMH><ListIdentifiers><header><datestamp>: ${datestamp.message}`,
+    );
+  }
+
+  const returnVal: OAIPMHHeader = { identifier, datestamp };
+
+  const { setSpec } = parsedHeader;
+  if (setSpec !== undefined) {
+    const parsedSetSpec = parseTextNodeArray(setSpec);
+
+    if (parsedSetSpec instanceof Error) {
+      throw new InnerValidationError(
+        `error parsing <OAI-PMH><ListIdentifiers><header><setSpec>: ${parsedSetSpec.message}`,
+      );
+    }
+
+    returnVal.setSpec = parsedSetSpec;
+  }
 
   if (attr !== undefined) {
-    const attrEntries = Object.entries(attr);
-    if (attrEntries.length !== 1) {
-      return false;
+    const { status } = attr;
+    if (Object.keys(attr).length !== 1 || status?.value !== "deleted") {
+      throw new InnerValidationError(
+        "expected <OAI-PMH><ListIdentifiers><header> attributes to potentially only have status with deleted value",
+      );
     }
 
-    const [attrKey, attrVal] = attrEntries[0]!;
-    if (attrKey !== "@_status" || attrVal !== "deleted") {
-      return false;
-    }
+    returnVal.isDeleted = true;
   }
 
-  if (
-    val === undefined ||
-    typeof val === "string" ||
-    !parsedXMLHasKeysBetweenLengths(val, 2, 3)
-  ) {
-    return false;
-  }
-
-  const { identifier, datestamp, setSpec } = val;
-
-  if (
-    identifier === undefined ||
-    !isStringWithNoAttributeTuple(identifier) ||
-    datestamp === undefined ||
-    !isStringWithNoAttributeTuple(datestamp)
-  ) {
-    return false;
-  }
-
-  if (setSpec !== undefined) {
-    for (const setSpecElement of setSpec) {
-      if (!isStringWithNoAttribute(setSpecElement)) {
-        return false;
-      }
-    }
-  }
-
-  return true;
+  return returnVal;
 }
 
-type OAIPMHListIdentifiersResponse = OAIPMHBaseResponseSharedRecord & {
-  ListIdentifiers: [
-    {
-      i: number;
-      val: {
-        header: OAIPMHHeader[];
-        resumptionToken: OAIPMHResumptionToken;
-      };
-    },
-  ];
-};
-
-function isOAIPMHListIdentifiersResponse(
-  value: ParsedXML,
-): value is OAIPMHListIdentifiersResponse {
-  const ListIdentifiers = validateOAIPMHBaseResponseAndGetValueOfKey(
-    value,
+function parseListIdentifiersResponse(
+  childNodeList: NodeListOf<ChildNode>,
+): ListResponse<OAIPMHHeader> {
+  const listIdentifiers = parseOAIPMHResponseBase(
+    childNodeList,
     "ListIdentifiers",
   );
-  if (!ListIdentifiers) {
-    return false;
+
+  const parseResult = parseToRecordOrString(listIdentifiers);
+
+  if (parseResult instanceof Error) {
+    throw new InnerValidationError(
+      `error parsing <OAI-PMH><ListIdentifiers>: ${parseResult.message}`,
+    );
   }
 
-  const { val } = ListIdentifiers[0]!;
-  if (val === undefined || typeof val === "string") {
-    return false;
+  if (typeof parseResult !== "object") {
+    throw new InnerValidationError(
+      "expected <OAI-PMH><ListIdentifiers> node to have element child nodes",
+    );
   }
 
-  const { header, resumptionToken } = val;
+  const { length } = Object.keys(parseResult);
+  if (length < 1 || length > 2) {
+    throw new InnerValidationError(
+      "expected <OAI-PMH><ListIdentifiers> to have only 2 possible types of element child nodes",
+    );
+  }
+
+  const { header, resumptionToken } = parseResult,
+    parsedResumptionToken = parseResumptionToken(resumptionToken);
+
+  if (parsedResumptionToken instanceof Error) {
+    throw new InnerValidationError(
+      `error parsing <OAI-PMH><ListIdentifiers><resumptionToken>: ${parsedResumptionToken.message}`,
+    );
+  }
 
   if (header === undefined) {
-    return false;
+    throw new InnerValidationError(
+      "expected <OAI-PMH><ListIdentifiers><header> element node(s) to exist",
+    );
   }
 
-  for (const headerElement of header) {
-    if (!isOAIPMHHeader(headerElement)) {
-      return false;
-    }
-  }
-
-  return (
-    resumptionToken === undefined || isOAIPMHResumptionToken(resumptionToken)
-  );
+  return {
+    records: header.map(parseHeader),
+    resumptionToken: parsedResumptionToken,
+  };
 }
 
-export { isOAIPMHHeader, isOAIPMHListIdentifiersResponse, type OAIPMHHeader };
+export { type OAIPMHHeader, parseListIdentifiersResponse };
