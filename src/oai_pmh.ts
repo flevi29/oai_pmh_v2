@@ -1,5 +1,5 @@
 import { OAIPMHRequest } from "./oai_pmh_request.ts";
-import { type ListResponse, OAIPMHParser } from "./parser/oai_pmh_parser.ts";
+import { OAIPMHParser } from "./parser/oai_pmh_parser.ts";
 import type {
   ListOptions,
   OAIPMHRequestConstructorOptions,
@@ -10,6 +10,7 @@ import type { OAIPMHHeader } from "./model/parser/header.ts";
 import type { OAIPMHRecord } from "./model/parser/record.ts";
 import type { OAIPMHSet } from "./model/parser/set.ts";
 import type { OAIPMHIdentify } from "./model/parser/identify.ts";
+import type { ListResponse } from "./model/parser/shared.ts";
 
 export class OAIPMH {
   readonly #request: OAIPMHRequest["request"];

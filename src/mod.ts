@@ -10,10 +10,6 @@ export type {
   RequestOptions,
 } from "./model/oai_pmh.ts";
 
-export type {
-  ParsedXML,
-  ParsedXMLRecordValue,
-} from "./model/parser/parsed_xml.ts";
 export type { OAIPMHErrorCode } from "./model/parser/error.ts";
 export type { OAIPMHMetadataFormat } from "./model/parser/metadata_format.ts";
 export type { OAIPMHRecord } from "./model/parser/record.ts";

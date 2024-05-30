@@ -1,71 +1,102 @@
-import {
-  isStringWithNoAttribute,
-  isStringWithNoAttributeTuple,
-  type OAIPMHBaseResponseSharedRecord,
-  type StringWithNoAttribute,
-  type StringWithNoAttributeTuple,
-  validateOAIPMHBaseResponseAndGetValueOfKey,
-} from "./shared.ts";
-import { parsedXMLHasKeysBetweenLengths } from "./util.ts";
-import type { ParsedXML, ParsedXMLRecordValue } from "./parsed_xml.ts";
+import type { ParsedXMLElement } from "./xml.ts";
+import { InnerValidationError } from "../../error/validation_error.ts";
+import { parseToRecordOrString } from "../../parser/xml_parser.ts";
+import { parseOAIPMHResponseBase } from "./base_oai_pmh.ts";
+import { parseKeyAsText, parseTextNodeArray } from "./shared.ts";
 
 type OAIPMHIdentify = {
-  i: number;
-  val: {
-    repositoryName: StringWithNoAttributeTuple;
-    baseURL: StringWithNoAttributeTuple;
-    protocolVersion: StringWithNoAttributeTuple;
-    earliestDatestamp: StringWithNoAttributeTuple;
-    deletedRecord: [{ i: number; val: "no" | "transient" | "persistent" }];
-    granularity: [{ i: number; val: "YYYY-MM-DD" | "YYYY-MM-DDThh:mm:ssZ" }];
-    adminEmail: StringWithNoAttributeTuple;
-    compression?: StringWithNoAttribute[];
-    description?: ParsedXMLRecordValue[];
-  };
+  repositoryName: string;
+  baseURL: string;
+  protocolVersion: string;
+  earliestDatestamp: string;
+  deletedRecord: "no" | "transient" | "persistent";
+  granularity: "YYYY-MM-DD" | "YYYY-MM-DDThh:mm:ssZ";
+  adminEmail: string;
+  compression?: string[];
+  description?: ParsedXMLElement[];
 };
 
-function isOAIPMHDeletedRecord(
-  value: ParsedXMLRecordValue[],
-): value is OAIPMHIdentify["val"]["deletedRecord"] {
-  if (value.length !== 1) {
-    return false;
+function parseIdentifyResponse(
+  childNodeList: NodeListOf<ChildNode>,
+): OAIPMHIdentify {
+  const identify = parseOAIPMHResponseBase(childNodeList, "Identify");
+
+  const parseResult = parseToRecordOrString(identify);
+
+  if (parseResult instanceof Error) {
+    throw new InnerValidationError(
+      `error parsing <OAI-PMH><Identify>: ${parseResult.message}`,
+    );
   }
 
-  const { val, attr } = value[0]!;
-  return (
-    attr === undefined &&
-    (val === "no" || val === "transient" || val === "persistent")
-  );
-}
-
-function isOAIPMHGranularity(
-  value: ParsedXMLRecordValue[],
-): value is OAIPMHIdentify["val"]["granularity"] {
-  if (value.length !== 1) {
-    return false;
+  if (typeof parseResult !== "object") {
+    throw new InnerValidationError(
+      "expected <OAI-PMH><Identify> node to have element child nodes",
+    );
   }
 
-  const { val, attr } = value[0]!;
-  return (
-    attr === undefined &&
-    (val === "YYYY-MM-DD" || val === "YYYY-MM-DDThh:mm:ssZ")
-  );
-}
+  const { length } = Object.keys(parseResult);
+  if (length < 7 || length > 9) {
+    throw new InnerValidationError(
+      "expected <OAI-PMH><Identify> to have only 7 to 9 possible types of element child nodes",
+    );
+  }
 
-function isOAIPMHIdentify(
-  value: ParsedXMLRecordValue,
-): value is OAIPMHIdentify {
-  const { attr, val } = value;
+  const repositoryName = parseKeyAsText(parseResult, "repositoryName");
+
+  if (repositoryName instanceof Error) {
+    throw new InnerValidationError("todo");
+  }
+
+  const baseURL = parseKeyAsText(parseResult, "baseURL");
+
+  if (baseURL instanceof Error) {
+    throw new InnerValidationError("todo");
+  }
+
+  const protocolVersion = parseKeyAsText(parseResult, "protocolVersion");
+
+  if (protocolVersion instanceof Error) {
+    throw new InnerValidationError("todo");
+  }
+
+  const earliestDatestamp = parseKeyAsText(parseResult, "earliestDatestamp");
+
+  if (earliestDatestamp instanceof Error) {
+    throw new InnerValidationError("todo");
+  }
+
+  const deletedRecord = parseKeyAsText(parseResult, "deletedRecord");
+
+  if (deletedRecord instanceof Error) {
+    throw new InnerValidationError("todo");
+  }
+
   if (
-    attr !== undefined ||
-    val === undefined ||
-    typeof val === "string" ||
-    !parsedXMLHasKeysBetweenLengths(val, 7, 9)
+    deletedRecord !== "no" &&
+    deletedRecord !== "transient" &&
+    deletedRecord !== "persistent"
   ) {
-    return false;
+    throw new InnerValidationError("todo");
   }
 
-  const {
+  const granularity = parseKeyAsText(parseResult, "granularity");
+
+  if (granularity instanceof Error) {
+    throw new InnerValidationError("todo");
+  }
+
+  if (granularity !== "YYYY-MM-DD" && granularity !== "YYYY-MM-DDThh:mm:ssZ") {
+    throw new InnerValidationError("todo");
+  }
+
+  const adminEmail = parseKeyAsText(parseResult, "adminEmail");
+
+  if (adminEmail instanceof Error) {
+    throw new InnerValidationError("todo");
+  }
+
+  const oaiPMHIdentify: OAIPMHIdentify = {
     repositoryName,
     baseURL,
     protocolVersion,
@@ -73,55 +104,25 @@ function isOAIPMHIdentify(
     deletedRecord,
     granularity,
     adminEmail,
-    compression,
-  } = val;
+  };
 
-  if (
-    repositoryName === undefined ||
-    !isStringWithNoAttributeTuple(repositoryName) ||
-    baseURL === undefined ||
-    !isStringWithNoAttributeTuple(baseURL) ||
-    protocolVersion === undefined ||
-    !isStringWithNoAttributeTuple(protocolVersion) ||
-    earliestDatestamp === undefined ||
-    !isStringWithNoAttributeTuple(earliestDatestamp) ||
-    deletedRecord === undefined ||
-    !isOAIPMHDeletedRecord(deletedRecord) ||
-    granularity === undefined ||
-    !isOAIPMHGranularity(granularity) ||
-    adminEmail === undefined ||
-    !isStringWithNoAttributeTuple(adminEmail)
-  ) {
-    return false;
-  }
+  const { compression, description } = parseResult;
 
   if (compression !== undefined) {
-    for (const compressionElement of compression) {
-      if (!isStringWithNoAttribute(compressionElement)) {
-        return false;
-      }
+    const parsedCompression = parseTextNodeArray(compression);
+
+    if (parsedCompression instanceof Error) {
+      throw new InnerValidationError("todo");
     }
+
+    oaiPMHIdentify.compression = parsedCompression;
   }
 
-  return true;
-}
-
-type OAIPMHIdentifyResponse = OAIPMHBaseResponseSharedRecord & {
-  Identify: [OAIPMHIdentify];
-};
-
-function isOAIPMHIdentifyResponse(
-  value: ParsedXML,
-): value is OAIPMHIdentifyResponse {
-  const Identify = validateOAIPMHBaseResponseAndGetValueOfKey(
-    value,
-    "Identify",
-  );
-  if (!Identify) {
-    return false;
+  if (description !== undefined) {
+    oaiPMHIdentify.description = description;
   }
 
-  return isOAIPMHIdentify(Identify[0]!);
+  return oaiPMHIdentify;
 }
 
-export { isOAIPMHIdentifyResponse, type OAIPMHIdentify };
+export { type OAIPMHIdentify, parseIdentifyResponse };

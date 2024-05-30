@@ -3,7 +3,10 @@ import {
   InnerValidationError,
   ValidationError,
 } from "../error/validation_error.ts";
-import { type OAIPMHIdentify } from "../model/parser/identify.ts";
+import {
+  type OAIPMHIdentify,
+  parseIdentifyResponse,
+} from "../model/parser/identify.ts";
 import {
   type OAIPMHRecord,
   parseGetRecordResponse,
@@ -46,22 +49,7 @@ export class OAIPMHParser {
   }
 
   readonly parseIdentify = (xml: string): OAIPMHIdentify => {
-    throw new Error("unimplemented");
-    // const oaiResponse = this.#parseAndValidateOAIPMHXML(xml, response);
-
-    // if (oaiResponse.status !== STATUS.OK) {
-    //   return oaiResponse;
-    // }
-
-    // const { status, value } = oaiResponse;
-    // if (!isOAIPMHIdentifyResponse(value)) {
-    //   return {
-    //     status: STATUS.VALIDATION_ERROR,
-    //     value: new ValidationError(xml, value, response),
-    //   };
-    // }
-
-    // return { status, value: value.Identify[0] };
+    return validationErrorWrap(xml, this.#xmlParser, parseIdentifyResponse);
   };
 
   readonly parseGetRecord = (xml: string): OAIPMHRecord => {
