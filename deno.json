@@ -9,5 +9,5 @@
     "noImplicitOverride": true,
     "noUncheckedIndexedAccess": true
   },
-  "imports": { "@deno/dnt": "jsr:@deno/dnt@^0.41.1" }
+  "imports": { "@deno/dnt": "jsr:@deno/dnt@^0.41.2" }
 }

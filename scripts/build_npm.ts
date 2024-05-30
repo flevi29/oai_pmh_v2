@@ -1,4 +1,4 @@
-import { build, emptyDir } from "../dev_deps.ts";
+import { build, emptyDir } from "@deno/dnt";
 import { default as denoJson } from "../deno.json" with { type: "json" };
 
 await emptyDir("./npm");
