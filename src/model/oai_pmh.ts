@@ -5,17 +5,10 @@ type ListOptions = {
   metadataPrefix: string;
 };
 
-type RequestOptions = {
-  signal?: AbortSignal;
-  retry?: number;
-  retryInterval?: number;
-};
-
 type OAIPMHRequestConstructorOptions = {
   baseURL: URL | string;
-  userAgent?: string;
-  debugLogRetries?: boolean;
+  init?: RequestInit;
   domParser?: typeof DOMParser;
 };
 
-export type { ListOptions, OAIPMHRequestConstructorOptions, RequestOptions };
+export type { ListOptions, OAIPMHRequestConstructorOptions };

@@ -5,7 +5,7 @@ import type {
   ParsedXMLRecord,
 } from "./xml.ts";
 
-type TextNodeWithAttributes = { attr: ParsedXMLAttributes; value: string };
+type TextNodeWithAttributes = { attr?: ParsedXMLAttributes; value: string };
 
 function parseTextNodeWithAttributes(
   parsedNode?: ParsedXMLElement[],
@@ -15,7 +15,7 @@ function parseTextNodeWithAttributes(
   }
 
   const { attr, value } = parsedNode[0]!;
-  if (attr === undefined || value === undefined) {
+  if (value === undefined) {
     return new Error("todo");
   }
 

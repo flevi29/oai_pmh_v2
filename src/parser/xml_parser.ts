@@ -127,6 +127,7 @@ function parseToRecordOrString(
 
         break;
       }
+      case childNode.PROCESSING_INSTRUCTION_NODE:
       case childNode.COMMENT_NODE: {
         break;
       }

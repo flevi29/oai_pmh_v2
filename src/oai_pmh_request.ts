@@ -1,118 +1,67 @@
 import { UnexpectedStatusCodeError } from "./error/unexpected_status_code_error.ts";
-import type {
-  OAIPMHRequestConstructorOptions,
-  RequestOptions,
-} from "./model/oai_pmh.ts";
-
-type SearchParamsRecord = Record<string, string | undefined>;
-
-function recordToURLSearchParams(record: SearchParamsRecord) {
-  const searchParams = new URLSearchParams();
-
-  for (const [key, val] of Object.entries(record)) {
-    if (val === undefined) {
-      continue;
-    }
-
-    searchParams.set(key, val);
-  }
-
-  return searchParams;
-}
-
-function getURLWithParameters(
-  url: string,
-  searchParamsRecord: SearchParamsRecord,
-) {
-  return `${url}?${recordToURLSearchParams(searchParamsRecord)}`;
-}
-
-async function checkResponse(
-  response: Response,
-): Promise<UnexpectedStatusCodeError | null> {
-  if (response.ok) {
-    return null;
-  }
-
-  const { status, statusText } = response;
-  const messageFromServer = await response.text();
-  const errorMessage =
-    `request to ${response.url} failed with HTTP status ${status} ${statusText}${
-      messageFromServer.trim() !== ""
-        ? ` | response from server: ${messageFromServer}`
-        : ""
-    }`;
-
-  return new UnexpectedStatusCodeError(errorMessage, response);
-}
-
-function coerceAndCheckURL(url: URL | string) {
-  if (typeof url === "string") {
-    // if string is invalid URL this will throw
-    new URL(url);
-    return url;
-  }
-  return url.href;
-}
+import type { OAIPMHRequestConstructorOptions } from "./model/oai_pmh.ts";
 
 export class OAIPMHRequest {
-  readonly #baseURL: string;
-  readonly #headers = new Headers();
-  readonly #debugLogRetries: boolean;
+  readonly #baseURL: URL;
+  readonly #init: RequestInit = {
+    // @TODO: Should this be like so? Read more: https://developer.mozilla.org/en-US/docs/Web/API/Request/Request#options
+    credentials: "omit",
+    // @TODO: Maybe we shouldn't type check the npm build? Just type check with Deno?
+    // @ts-ignore: No cache in Node.js fetch type definitions
+    cache: "no-store",
+  };
 
-  constructor(options: OAIPMHRequestConstructorOptions) {
-    const { baseURL, userAgent } = options;
-    this.#baseURL = coerceAndCheckURL(baseURL);
-    this.#headers.set("User-Agent", userAgent || "oai_pmh_v2_js");
-    this.#debugLogRetries = options?.debugLogRetries ?? false;
+  constructor({
+    baseURL,
+    init,
+  }: OAIPMHRequestConstructorOptions) {
+    this.#baseURL = new URL(baseURL);
+
+    if (init !== undefined) {
+      this.#init = { ...this.#init, ...init };
+    }
   }
 
-  request = async (
-    searchParams: SearchParamsRecord,
-    options?: RequestOptions,
+  readonly request = async (
+    searchParams: ConstructorParameters<typeof URLSearchParams>[0],
+    init?: RequestInit,
   ): Promise<string> => {
-    const signal = options?.signal;
+    const url = new URL(this.#baseURL);
 
-    const response = await fetch(
-      getURLWithParameters(this.#baseURL, searchParams),
-      {
-        signal: signal,
-        headers: this.#headers,
-        credentials: "omit",
-        // @TODO: Maybe we shouldn't type check the npm build? Just type check with Deno?
-        // @ts-ignore: No cache in Node.js fetch type definitions
-        cache: "no-store",
-      },
-    );
-
-    const responseError = await checkResponse(response);
-    // @TODO: Should there be a retry thingy here? Research whether there are better options!
-    if (responseError !== null) {
-      const retry = options?.retry ?? 3;
-      const retryInterval = options?.retryInterval ?? 1000;
-
-      if (responseError.response.status < 500 || retry < 1) {
-        throw responseError;
-      }
-
-      if (this.#debugLogRetries) {
-        console.debug(responseError);
-      }
-
-      if (retryInterval > 0) {
-        if (this.#debugLogRetries) {
-          console.debug(`retrying request in ${retryInterval}ms"`);
-        }
-
-        await new Promise((resolve) => setTimeout(resolve, retryInterval));
-      }
-
-      return this.request(searchParams, {
-        ...options,
-        retry: retry - 1,
-      });
+    if (searchParams !== undefined) {
+      url.search = new URLSearchParams(searchParams).toString();
     }
 
-    return await response.text();
+    if (init?.headers !== undefined && this.#init.headers !== undefined) {
+      // Make a shallow copy of init, so when merging headers underneath we
+      // don't mutate a user provided value that they might re-use elsewhere
+      init = { ...init };
+
+      const defaultHeaders = new Headers(this.#init.headers),
+        initHeaders = new Headers(init.headers);
+
+      init.headers = {
+        ...Object.fromEntries(defaultHeaders.entries()),
+        ...Object.fromEntries(initHeaders.entries()),
+      };
+    }
+
+    const response = await fetch(url, { ...this.#init, ...init });
+
+    if (response.ok) {
+      return await response.text();
+    }
+
+    const { status, statusText } = response;
+    const responseBodyText = await response.text();
+
+    throw new UnexpectedStatusCodeError(
+      `request to ${response.url} failed with HTTP status ${status} ${statusText}${
+        responseBodyText !== ""
+          ? ` | response from server: ${responseBodyText}`
+          : ""
+      }`,
+      response,
+    );
   };
 }

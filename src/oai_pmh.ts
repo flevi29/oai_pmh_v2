@@ -3,7 +3,6 @@ import { OAIPMHParser } from "./parser/oai_pmh_parser.ts";
 import type {
   ListOptions,
   OAIPMHRequestConstructorOptions,
-  RequestOptions,
 } from "./model/oai_pmh.ts";
 import type { OAIPMHMetadataFormat } from "./model/parser/metadata_format.ts";
 import type { OAIPMHHeader } from "./model/parser/header.ts";
@@ -17,32 +16,31 @@ export class OAIPMH {
   readonly #parser: OAIPMHParser;
 
   constructor(options: OAIPMHRequestConstructorOptions) {
-    const oaiPMHParser = new OAIPMHRequest(options);
-    this.#request = oaiPMHParser.request.bind(oaiPMHParser);
+    const { request } = new OAIPMHRequest(options);
+    this.#request = request;
+
     this.#parser = new OAIPMHParser(options.domParser ?? DOMParser);
   }
 
-  async identify(requestOptions?: RequestOptions): Promise<OAIPMHIdentify> {
-    const result = await this.#request({ verb: "Identify" }, requestOptions);
-
-    return this.#parser.parseIdentify(result);
+  async identify(init?: RequestInit): Promise<OAIPMHIdentify> {
+    const xml = await this.#request({ verb: "Identify" }, init);
+    return this.#parser.parseIdentify(xml);
   }
 
   async getRecord(
     identifier: string,
     metadataPrefix: string,
-    requestOptions?: RequestOptions,
+    init?: RequestInit,
   ): Promise<OAIPMHRecord> {
-    const result = await this.#request(
+    const xml = await this.#request(
       {
         verb: "GetRecord",
         identifier,
         metadataPrefix,
       },
-      requestOptions,
+      init,
     );
-
-    return this.#parser.parseGetRecord(result);
+    return this.#parser.parseGetRecord(xml);
   }
 
   // @TODO: fetch combined with AbortController causes minor memory leak here
@@ -53,67 +51,66 @@ export class OAIPMH {
   async *#list<T>(
     parseListCallback: (xml: string) => ListResponse<T>,
     verb: string,
-    requestOptions?: RequestOptions,
+    init?: RequestInit,
     listOptions?: ListOptions,
   ): AsyncGenerator<T[], void> {
-    let resumptionToken: ListResponse<T>["resumptionToken"] = null;
+    let searchParams: typeof listOptions | { resumptionToken: string } =
+      listOptions;
 
     for (;;) {
-      const options = resumptionToken === null
-        ? listOptions
-        : { resumptionToken };
+      const xml = await this.#request(
+        { verb, ...searchParams },
+        { keepalive: true, ...init },
+      );
 
-      const result = await this.#request({ verb, ...options }, requestOptions);
-
-      const { records, resumptionToken: nextResumptionToken } =
-        parseListCallback(result);
+      const { records, resumptionToken } = parseListCallback(xml);
 
       yield records;
 
-      resumptionToken = nextResumptionToken;
       if (resumptionToken === null) {
         break;
       }
+
+      searchParams = { resumptionToken };
     }
   }
 
   listIdentifiers(
     listOptions: ListOptions,
-    requestOptions?: RequestOptions,
+    init?: RequestInit,
   ): AsyncGenerator<OAIPMHHeader[], void> {
     return this.#list(
       this.#parser.parseListIdentifiers,
       "ListIdentifiers",
-      requestOptions,
+      init,
       listOptions,
     );
   }
 
   async listMetadataFormats(
     identifier?: string,
-    requestOptions?: RequestOptions,
+    init?: RequestInit,
   ): Promise<OAIPMHMetadataFormat[]> {
-    const result = await this.#request(
-      { verb: "ListMetadataFormats", identifier },
-      requestOptions,
+    const xml = await this.#request(
+      identifier === undefined ? undefined : { identifier },
+      init,
     );
-
-    return this.#parser.parseListMetadataFormats(result);
+    return this.#parser.parseListMetadataFormats(xml);
   }
 
   listRecords(
     listOptions: ListOptions,
-    requestOptions?: RequestOptions,
+    init?: RequestInit,
   ): AsyncGenerator<OAIPMHRecord[], void> {
     return this.#list(
       this.#parser.parseListRecords,
       "ListRecords",
-      requestOptions,
+      init,
       listOptions,
     );
   }
 
-  listSets(requestOptions?: RequestOptions): AsyncGenerator<OAIPMHSet[], void> {
-    return this.#list(this.#parser.parseListSets, "ListSets", requestOptions);
+  listSets(init?: RequestInit): AsyncGenerator<OAIPMHSet[], void> {
+    return this.#list(this.#parser.parseListSets, "ListSets", init);
   }
 }

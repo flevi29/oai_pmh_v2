@@ -2,7 +2,8 @@
   "version": "3",
   "packages": {
     "specifiers": {
-      "npm:linkedom@0.18.0": "npm:linkedom@0.18.0"
+      "npm:linkedom@0.18.0": "npm:linkedom@0.18.0",
+      "npm:prettier@latest": "npm:prettier@3.2.5"
     },
     "npm": {
       "boolbase@1.0.0": {
@@ -85,6 +86,10 @@
         "dependencies": {
           "boolbase": "boolbase@1.0.0"
         }
+      },
+      "prettier@3.2.5": {
+        "integrity": "sha512-3/GWa9aOC0YeD7LUfvOG2NiDyhOWRvt1k+rcKhOuYnMY24iiCphgneUfJDyFXd6rZCAnuLBv6UeAULtrhT/F4A==",
+        "dependencies": {}
       },
       "uhyphen@0.2.0": {
         "integrity": "sha512-qz3o9CHXmJJPGBdqzab7qAYuW8kQGKNEuoHFYrBwV6hWIMcpAmxDLXojcHfFr9US1Pe6zUswEIJIbLI610fuqA==",

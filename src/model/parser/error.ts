@@ -37,6 +37,7 @@ function validateAndGetOAIPMHErrorResponse(
     );
   }
 
+  // @TODO: This didn't have attributes
   const request = parseKeyAsTextWithAttributes(parseResult, "request");
 
   if (request instanceof Error) {
