@@ -1,39 +1,55 @@
-import { derived, type Readable, type Writable, writable } from "svelte/store";
+import { type Writable, writable } from "svelte/store";
 
 export class Semaphore {
-  #weight: number;
-  readonly #listeners = new Set<(weight: number) => void>();
+  readonly #initialWeight: number;
+  #weight: Writable<number>;
 
   constructor(weight: number) {
-    this.#weight = weight;
-  }
-
-  addListener(listener: (weight: number) => void): () => boolean {
-    this.#listeners.add(listener);
-    return () => this.#listeners.delete(listener);
+    this.#initialWeight = weight;
+    this.#weight = writable(weight);
   }
 
   #moveWeight(increment: boolean): void {
-    this.#weight = increment ? this.#weight + 1 : this.#weight - 1;
-    for (const listener of this.#listeners) {
-      listener(this.#weight);
-    }
+    this.#weight.update((v) => increment ? v + 1 : v - 1);
   }
 
   #promiseChain = Promise.resolve<() => void>(() => {});
   acquireLock(): Promise<() => void> {
     return (this.#promiseChain = this.#promiseChain.then(async () => {
       const { promise, resolve } = Promise.withResolvers<void>();
-      const removeListener = this.addListener((weight) => {
+      const unsubscribe = this.#weight.subscribe((weight) => {
         if (weight !== 0) {
           resolve();
         }
       });
+
       await promise;
-      removeListener();
+      unsubscribe();
 
       this.#moveWeight(false);
-      return () => this.#moveWeight(true);
+
+      let callback: (() => void) | null = () => this.#moveWeight(true);
+      return () => {
+        if (callback !== null) {
+          callback();
+          callback = null;
+        }
+      };
     }));
+  }
+
+  async waitForEmptyQueue(): Promise<void> {
+    const { promise, resolve } = Promise.withResolvers<void>(),
+      unsubsribe = this.#weight.subscribe((weight) => {
+        if (weight === this.#initialWeight) {
+          resolve();
+        }
+      });
+
+    try {
+      await promise;
+    } finally {
+      unsubsribe();
+    }
   }
 }

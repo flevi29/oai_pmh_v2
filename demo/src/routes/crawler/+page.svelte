@@ -2,29 +2,21 @@
   import { Crawler } from "./crawler";
 
   const crawler = new Crawler(),
-    { validURLs, isBusy, concurrentValidations } = crawler;
+    { validURLs, isStartable, isTerimnatable } = crawler;
 
   function start() {
-    crawler.start();
+    crawler.startProcess();
   }
 
   function stop() {
-    crawler.stop().catch(console.warn);
+    crawler.terminateProcess();
   }
 </script>
 
-<button type="button" disabled={$isBusy} on:click={() => start()}
+<button type="button" disabled={!$isStartable} on:click={() => start()}
   >Start</button
 >
-<button type="button" disabled={!$isBusy} on:click={() => stop()}>Stop</button>
-
-{#if $concurrentValidations !== 0}
-  <div>
-    <span
-      >concurrent validations running: ~{$concurrentValidations}</span
-    >
-  </div>
-{/if}
+<button type="button" disabled={!$isTerimnatable} on:click={() => stop()}>Stop</button>
 
 <div>
   {#if $validURLs !== null}

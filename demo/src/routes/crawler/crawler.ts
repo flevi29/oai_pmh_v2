@@ -1,49 +1,76 @@
-import { readonly, writable } from "svelte/store";
+import { derived, readonly, writable } from "svelte/store";
 import { parseIdentifyResponse } from "../../../../src/model/parser/identify";
-import {
-  parseToRecordOrString,
-  XMLParser,
-} from "../../../../src/parser/xml_parser";
+import { XMLParser } from "../../../../src/parser/xml_parser";
 import { InnerValidationError } from "../../../../src/error/validation_error";
 import { Semaphore } from "./semaphore";
+import { parseBaseURLs } from "./base-urls";
 import {
   getURLs,
   getValidURLs,
   setURLs,
   setValidURLs,
 } from "$lib/stores/oai-pmh-list";
+import {
+  CRAWLER_ABORT_SYMBOL,
+  CrawlerAbortController,
+} from "./crawler-abort-controller";
 
 const CORS_PROXIED_URL_LIST_URL =
     "https://corsproxy.io/?https://www.openarchives.org/pmh/registry/ListFriends",
-  COUNT = 10,
   TIMEOUT = 60_000,
-  WEIGHT = 5;
+  WEIGHT = 10;
 
 export class Crawler {
-  #started = false;
+  #abortController = new CrawlerAbortController();
+
+  #isProcessing = false;
+  readonly #writableIsProcessing = writable(this.#isProcessing);
+  #setIsProcessing(value: boolean): void {
+    this.#isProcessing = value;
+    this.#writableIsProcessing.set(value);
+  }
+
+  #isTerminating = false;
+  readonly #writableIsTerminating = writable(this.#isTerminating);
+  #setIsTerminating(value: boolean): void {
+    this.#isTerminating = value;
+    this.#writableIsTerminating.set(value);
+  }
+
+  #isToBeTerminated = false;
+
+  isStartable = derived(this.#writableIsProcessing, ($isProcessing) => {
+    return !$isProcessing;
+  });
+
+  isTerimnatable = derived([
+    this.#writableIsProcessing,
+    this.#writableIsTerminating,
+  ], ([$isProcessing, $isTerminating]) => {
+    return $isProcessing && !$isTerminating;
+  });
 
   readonly #parser = new XMLParser(DOMParser);
-  // @TODO: This can actually return an array with one empty string, beware: > "".split("|") => [ '' ]
   #urls = getURLs();
   #validURLs = getValidURLs();
   readonly #writableValidURLs = writable(this.#validURLs);
   readonly validURLs = readonly(this.#writableValidURLs);
 
-  #validationIntervalID: ReturnType<typeof setInterval> | null = null;
-  #storeUpdateIntervalID: ReturnType<typeof setInterval> | null = null;
-
   #indexes: number[] = [];
-  #lastStartIndex?: number;
+  #index?: number;
 
   readonly #semaphore = new Semaphore(WEIGHT);
-  readonly concurrentValidations = writable<number | null>(null);
 
-  #pushValidURLs(urls: string[]): void {
-    (this.#validURLs ??= []).push(...urls);
+  #addValidURL(url: string): void {
+    (this.#validURLs ??= []).push(url);
     this.#writableValidURLs.set(this.#validURLs);
   }
 
   async #fetchURLs(): Promise<string[]> {
+    if (this.#urls !== null) {
+      return this.#urls;
+    }
+
     const response = await fetch(CORS_PROXIED_URL_LIST_URL);
 
     if (!response.ok) {
@@ -56,135 +83,93 @@ export class Crawler {
     }
 
     const xml = await response.text(),
-      xmlDocument = this.#parser.parse(xml),
-      parseResult = parseToRecordOrString(xmlDocument.childNodes);
+      { childNodes } = this.#parser.parse(xml);
 
-    if (parseResult instanceof Error) {
-      throw new Error(
-        `error parsing base XML contents: ${parseResult.message}`,
-      );
-    }
-
-    if (typeof parseResult !== "object") {
-      throw new Error(
-        "expected base XML to have child nodes other than text",
-      );
-    }
-
-    const { BaseURLs } = parseResult;
-    if (Object.keys(parseResult).length !== 1 || BaseURLs === undefined) {
-      throw new Error("expected base XML to have one <BaseURLs> child node");
-    }
-
-    const { value } = BaseURLs[0]!;
-    if (value === undefined) {
-      throw new Error("expected <BaseURLs> node not to be empty");
-    }
-
-    const nextParseResult = parseToRecordOrString(value);
-
-    if (nextParseResult instanceof Error) {
-      throw new Error(
-        `error parsing <BaseURLs> contents: ${nextParseResult.message}`,
-      );
-    }
-
-    if (typeof nextParseResult !== "object") {
-      throw new Error(
-        "expected <BaseURLs> to have child nodes othen than text",
-      );
-    }
-
-    const { baseURL } = nextParseResult;
-    if (baseURL === undefined) {
-      throw new Error("expected <BaseURLs> to have <baseURL> child nodes");
-    }
-
-    return baseURL.map(({ value }) => {
-      if (value === undefined) {
-        throw new Error("expected <BaseURLs><baseURL> not to be empty");
-      }
-
-      const parsedBaseURL = parseToRecordOrString(value);
-
-      if (typeof parsedBaseURL !== "string") {
-        throw new Error("expected <BaseURLs><baseURL> to be a text node");
-      }
-
-      return parsedBaseURL;
-    });
+    return (this.#urls = parseBaseURLs(childNodes));
   }
 
   async #validateURLs(): Promise<void> {
-    const releaseLock = await this.#semaphore.acquireLock();
+    const urls = await this.#fetchURLs();
 
     try {
-      const lastIndexEnd = this.#lastStartIndex === undefined
-          ? undefined
-          : this.#lastStartIndex + COUNT - 1,
-        startIndex = lastIndexEnd === undefined ? 0 : lastIndexEnd + 1;
+      for (;;) {
+        if (!this.#isProcessing || this.#isToBeTerminated) {
+          break;
+        }
 
-      if (this.#urls === null) {
-        this.#urls = await this.#fetchURLs();
-      }
+        this.#index = this.#index === undefined
+          ? urls.length - 1
+          : this.#index - 1;
 
-      const slicedURLs = this.#urls.slice(startIndex, startIndex + COUNT);
-      this.#lastStartIndex = startIndex;
+        const url = urls[this.#index], index = this.#index;
+        if (url === undefined) {
+          break;
+        }
 
-      const settledPromises = await Promise.allSettled(
-        slicedURLs.map(async (url) => {
+        const releaseLock = await this.#semaphore.acquireLock();
+
+        (async () => {
           const response = await fetch(`${url}?verb=Identify`, {
-            signal: AbortSignal.timeout(TIMEOUT),
-          }).catch(() => null);
+            signal:
+              // @TODO: coming in typescript 5.5
+              (<(
+                signals: Iterable<AbortSignal>,
+              ) => AbortSignal> ((<any> AbortSignal).any))([
+                AbortSignal.timeout(TIMEOUT),
+                this.#abortController.signal,
+              ]),
+          }).catch((error) =>
+            error === CRAWLER_ABORT_SYMBOL ? CRAWLER_ABORT_SYMBOL : null
+          );
 
-          if (response === null || !response.ok) {
+          // In case we aborted due to termination
+          if (response === CRAWLER_ABORT_SYMBOL) {
             return;
           }
 
-          const xml = await response.text(),
-            { childNodes } = this.#parser.parse(xml);
+          responseParse: {
+            if (response === null || !response.ok) {
+              break responseParse;
+            }
 
-          try {
-            // @TODO: Maybe do something with this as well
-            parseIdentifyResponse(childNodes);
-          } catch (error: unknown) {
-            if (error instanceof InnerValidationError) {
+            const xml = await response.text(),
+              { childNodes } = this.#parser.parse(xml);
+
+            try {
+              // @TODO: Maybe do something with this as well
+              parseIdentifyResponse(childNodes);
+            } catch (error: unknown) {
+              if (!(error instanceof InnerValidationError)) {
+                throw error;
+              }
+
               // @TODO: Maybe log this for now, because we might catch bugs like this too
               console.warn(error);
               console.log(xml);
-              return;
+              break responseParse;
             }
 
-            throw error;
+            // @TODO: It's possible that somehow through starting and stopping consecutively
+            //        we're adding duplicates here, so we might not be removing all that we add here.
+            //        Investigate!
+            this.#addValidURL(url);
           }
 
-          return url;
-        }),
-      );
-
-      let validURLs: string[] | null = null, errors: unknown[] | null = null;
-      for (const settledPromise of settledPromises) {
-        if (settledPromise.status === "fulfilled") {
-          const { value } = settledPromise;
-          if (value !== undefined) {
-            (validURLs ??= []).push(value);
-          }
-        } else {
-          (errors ??= []).push(settledPromise.reason);
-        }
+          // @TODO: Could optimize and merge unnecessary indexes at this point
+          this.#indexes.push(index);
+        })().catch((error) => {
+          console.warn(error);
+          this.#isToBeTerminated = true;
+          this.#abortController.abort();
+        }).finally(() => releaseLock());
       }
-
-      if (errors !== null) {
-        throw new Error("something went wrong", { cause: errors });
-      }
-
-      if (validURLs !== null) {
-        this.#pushValidURLs(validURLs);
-      }
-
-      this.#indexes.push(startIndex);
     } finally {
-      releaseLock();
+      this.#isToBeTerminated = false;
+      this.#index = undefined;
+
+      await this.#semaphore.waitForEmptyQueue();
+
+      this.#abortController.setNew();
     }
   }
 
@@ -196,12 +181,12 @@ export class Crawler {
       for (let i = 0; i < this.#indexes.length; i += 1) {
         const value = this.#indexes[i]!, nextValue = this.#indexes[i + 1];
 
-        if (nextValue !== undefined && value - nextValue === COUNT) {
+        if (nextValue !== undefined && value - nextValue === 1) {
           delCount += 1;
           continue;
         }
 
-        this.#urls.splice(value, COUNT * delCount);
+        this.#urls.splice(value, delCount);
         delCount = 1;
       }
 
@@ -215,44 +200,49 @@ export class Crawler {
     }
   }
 
-  // @TODO: This ain't stopping even if it finished boy, so gotta decide when it finishes
-  // @TODO: Use a Semaphor instead of this bullshit, we shouldn't have more than X concurrent network requests!
-  start(): void {
-    this.#storeUpdateIntervalID = setInterval(() => {
-      this.#updateStores();
-    }, 10_000);
+  startProcess(): void {
+    if (this.#isProcessing) {
+      throw new Error("already processing");
+    }
 
-    this.#validationIntervalID = setInterval(() => {
-      if (this.#urls !== null && this.#urls.length === 0) {
-        clearInterval(this.#storeUpdateIntervalID!);
-        clearInterval(this.#validationIntervalID!);
-      } else {
-        this.#validateURLs().catch(console.warn);
+    this.#setIsProcessing(true);
+
+    const intervalID = setInterval(() => this.#updateStores(), 10_000);
+
+    this.#validateURLs().catch(console.warn).finally(() => {
+      try {
+        clearInterval(intervalID);
+        this.#updateStores();
+      } finally {
+        this.#setIsProcessing(false);
       }
-    }, 300);
+    }).catch(console.warn);
   }
 
-  async stop(): Promise<void> {
-    if (this.#validationIntervalID !== null) {
-      clearInterval(this.#validationIntervalID);
+  terminateProcess(): void {
+    if (this.#isTerminating) {
+      throw new Error("process is already being terimnated");
     }
 
-    if (this.#storeUpdateIntervalID !== null) {
-      clearInterval(this.#storeUpdateIntervalID);
+    if (!this.#isProcessing) {
+      throw new Error("no process in progress to terminate");
     }
 
-    // this will only run on the latest browsers
-    // https://caniuse.com/mdn-javascript_builtins_promise_withresolvers
-    const { promise, resolve } = Promise.withResolvers<void>();
-    const unsubsribe = this.#semaphore.isBusy.subscribe((v) => {
-      if (!v) {
-        resolve();
-      }
-    });
+    this.#setIsTerminating(true);
+    this.#isToBeTerminated = true;
+    this.#abortController.abort();
 
-    await promise;
-    unsubsribe();
+    const { promise, resolve } = Promise.withResolvers<void>(),
+      unsubsribe = this.#writableIsProcessing.subscribe((v) => {
+        if (!v) {
+          resolve();
+        }
+      });
 
-    this.#updateStores();
+    promise.catch(console.warn).finally(() => {
+      this.#isToBeTerminated = false;
+      unsubsribe();
+      this.#setIsTerminating(false);
+    }).catch(console.warn);
   }
 }
