@@ -14,6 +14,7 @@ import {
   CRAWLER_ABORT_SYMBOL,
   CrawlerAbortController,
 } from "./crawler-abort-controller";
+import { Indexes } from "./indexes";
 
 const CORS_PROXIED_URL_LIST_URL =
     "https://corsproxy.io/?https://www.openarchives.org/pmh/registry/ListFriends",
@@ -56,7 +57,7 @@ export class Crawler {
   readonly #writableValidURLs = writable(this.#validURLs);
   readonly validURLs = readonly(this.#writableValidURLs);
 
-  #indexes: number[] = [];
+  readonly #indexes = new Indexes();
   #index?: number;
 
   readonly #semaphore = new Semaphore(WEIGHT);
@@ -67,6 +68,7 @@ export class Crawler {
   }
 
   async #fetchURLs(): Promise<string[]> {
+    // @TODO: maybe should encode URLs and then concat with whatever for persistent storage
     if (this.#urls !== null) {
       return this.#urls;
     }
@@ -97,18 +99,20 @@ export class Crawler {
           break;
         }
 
+        const releaseLock = await this.#semaphore.acquireLock();
+
         this.#index = this.#index === undefined
           ? urls.length - 1
           : this.#index - 1;
 
         const url = urls[this.#index], index = this.#index;
         if (url === undefined) {
+          releaseLock();
           break;
         }
 
-        const releaseLock = await this.#semaphore.acquireLock();
-
         (async () => {
+          // @TODO: Some URLs seem to return a HTML page, but maybe we can send some headers or something that fixes it
           const response = await fetch(`${url}?verb=Identify`, {
             signal:
               // @TODO: coming in typescript 5.5
@@ -149,14 +153,10 @@ export class Crawler {
               break responseParse;
             }
 
-            // @TODO: It's possible that somehow through starting and stopping consecutively
-            //        we're adding duplicates here, so we might not be removing all that we add here.
-            //        Investigate!
             this.#addValidURL(url);
           }
 
-          // @TODO: Could optimize and merge unnecessary indexes at this point
-          this.#indexes.push(index);
+          this.#indexes.addIndex(index);
         })().catch((error) => {
           console.warn(error);
           this.#isToBeTerminated = true;
@@ -175,23 +175,7 @@ export class Crawler {
 
   #updateStores(): void {
     if (this.#urls !== null) {
-      // Optimized so that the minimal amount of splice operations are made.
-      let delCount = 1;
-      this.#indexes.sort((a, b) => b - a);
-      for (let i = 0; i < this.#indexes.length; i += 1) {
-        const value = this.#indexes[i]!, nextValue = this.#indexes[i + 1];
-
-        if (nextValue !== undefined && value - nextValue === 1) {
-          delCount += 1;
-          continue;
-        }
-
-        this.#urls.splice(value, delCount);
-        delCount = 1;
-      }
-
-      this.#indexes = [];
-
+      this.#indexes.removeMarkedElements(this.#urls);
       setURLs(this.#urls);
     }
 
@@ -207,7 +191,11 @@ export class Crawler {
 
     this.#setIsProcessing(true);
 
-    const intervalID = setInterval(() => this.#updateStores(), 10_000);
+    const intervalID = setInterval(() => {
+      this.#semaphore.runWithNoParallelism(() => this.#updateStores()).catch(
+        console.warn,
+      );
+    }, TIMEOUT * 3);
 
     this.#validateURLs().catch(console.warn).finally(() => {
       try {

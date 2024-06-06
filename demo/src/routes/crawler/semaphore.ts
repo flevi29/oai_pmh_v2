@@ -13,7 +13,7 @@ export class Semaphore {
     this.#weight.update((v) => increment ? v + 1 : v - 1);
   }
 
-  #promiseChain = Promise.resolve<() => void>(() => {});
+  #promiseChain = Promise.resolve(() => {});
   acquireLock(): Promise<() => void> {
     return (this.#promiseChain = this.#promiseChain.then(async () => {
       const { promise, resolve } = Promise.withResolvers<void>();
@@ -51,5 +51,13 @@ export class Semaphore {
     } finally {
       unsubsribe();
     }
+  }
+
+  runWithNoParallelism(callback: () => void): Promise<() => void> {
+    return (this.#promiseChain = this.#promiseChain.then(async () => {
+      await this.waitForEmptyQueue();
+      callback();
+      return () => {};
+    }));
   }
 }
