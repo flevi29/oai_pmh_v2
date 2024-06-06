@@ -52,12 +52,4 @@ export class Semaphore {
       unsubsribe();
     }
   }
-
-  runWithNoParallelism(callback: () => void): Promise<() => void> {
-    return (this.#promiseChain = this.#promiseChain.then(async () => {
-      await this.waitForEmptyQueue();
-      callback();
-      return () => {};
-    }));
-  }
 }

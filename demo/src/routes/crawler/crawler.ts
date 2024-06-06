@@ -1,7 +1,7 @@
 import { derived, readonly, writable } from "svelte/store";
-import { parseIdentifyResponse } from "../../../../src/model/parser/identify";
-import { XMLParser } from "../../../../src/parser/xml_parser";
-import { InnerValidationError } from "../../../../src/error/validation_error";
+import { parseIdentifyResponse } from "$rootSrc/model/parser/identify";
+import { XMLParser } from "$rootSrc/parser/xml_parser";
+import { InnerValidationError } from "$rootSrc/error/validation_error";
 import { Semaphore } from "./semaphore";
 import { parseBaseURLs } from "./base-urls";
 import {
@@ -99,17 +99,16 @@ export class Crawler {
           break;
         }
 
-        const releaseLock = await this.#semaphore.acquireLock();
-
         this.#index = this.#index === undefined
           ? urls.length - 1
           : this.#index - 1;
 
         const url = urls[this.#index], index = this.#index;
         if (url === undefined) {
-          releaseLock();
           break;
         }
+
+        const releaseLock = await this.#semaphore.acquireLock();
 
         (async () => {
           // @TODO: Some URLs seem to return a HTML page, but maybe we can send some headers or something that fixes it
@@ -149,6 +148,7 @@ export class Crawler {
 
               // @TODO: Maybe log this for now, because we might catch bugs like this too
               console.warn(error);
+              console.log(url);
               console.log(xml);
               break responseParse;
             }
@@ -191,15 +191,8 @@ export class Crawler {
 
     this.#setIsProcessing(true);
 
-    const intervalID = setInterval(() => {
-      this.#semaphore.runWithNoParallelism(() => this.#updateStores()).catch(
-        console.warn,
-      );
-    }, TIMEOUT * 3);
-
     this.#validateURLs().catch(console.warn).finally(() => {
       try {
-        clearInterval(intervalID);
         this.#updateStores();
       } finally {
         this.#setIsProcessing(false);

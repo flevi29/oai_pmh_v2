@@ -1,4 +1,4 @@
-import { parseToRecordOrString } from "../../../../src/parser/xml_parser";
+import { parseToRecordOrString } from "$rootSrc/parser/xml_parser";
 
 export function parseBaseURLs(childNodeList: NodeListOf<ChildNode>): string[] {
   const parseResult = parseToRecordOrString(childNodeList);
