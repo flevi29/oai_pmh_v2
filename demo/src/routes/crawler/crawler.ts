@@ -4,20 +4,16 @@ import { XMLParser } from "$rootSrc/parser/xml_parser";
 import { InnerValidationError } from "$rootSrc/error/validation_error";
 import { Semaphore } from "./semaphore";
 import { parseBaseURLs } from "./base-urls";
-import {
-  getURLs,
-  getValidURLs,
-  setURLs,
-  setValidURLs,
-} from "$lib/stores/oai-pmh-list";
+import { URLStore } from "$lib/stores/url-store";
 import {
   CRAWLER_ABORT_SYMBOL,
   CrawlerAbortController,
 } from "./crawler-abort-controller";
 import { Indexes } from "./indexes";
 
-const CORS_PROXIED_URL_LIST_URL =
-    "https://corsproxy.io/?https://www.openarchives.org/pmh/registry/ListFriends",
+const CORS_PROXIED_URL_LIST_URL = `https://corsproxy.io/?${
+    encodeURIComponent("https://www.openarchives.org/pmh/registry/ListFriends")
+  }`,
   TIMEOUT = 60_000,
   WEIGHT = 10;
 
@@ -52,9 +48,11 @@ export class Crawler {
   });
 
   readonly #parser = new XMLParser(DOMParser);
-  #urls = getURLs();
-  #validURLs = getValidURLs();
-  readonly #writableValidURLs = writable(this.#validURLs);
+  // @TODO: Make it so that we don't rely on store in case for some reason browser blocks it
+  readonly #urlStore = new URLStore();
+  #urls?: string[];
+  #validURLs?: string[];
+  readonly #writableValidURLs = writable<string[] | undefined>(this.#validURLs);
   readonly validURLs = readonly(this.#writableValidURLs);
 
   readonly #indexes = new Indexes();
@@ -62,14 +60,20 @@ export class Crawler {
 
   readonly #semaphore = new Semaphore(WEIGHT);
 
+  readonly #initializerPromise = (async () => {
+    await this.#urlStore.connectToDatabase();
+    this.#urls = await this.#urlStore.getURLs();
+    this.#validURLs = await this.#urlStore.getValidURLs();
+    this.#writableValidURLs.set(this.#validURLs);
+  })().catch(console.warn);
+
   #addValidURL(url: string): void {
     (this.#validURLs ??= []).push(url);
     this.#writableValidURLs.set(this.#validURLs);
   }
 
   async #fetchURLs(): Promise<string[]> {
-    // @TODO: maybe should encode URLs and then concat with whatever for persistent storage
-    if (this.#urls !== null) {
+    if (this.#urls !== undefined) {
       return this.#urls;
     }
 
@@ -173,14 +177,14 @@ export class Crawler {
     }
   }
 
-  #updateStores(): void {
-    if (this.#urls !== null) {
+  async #updateStores(): Promise<void> {
+    if (this.#urls !== undefined) {
       this.#indexes.removeMarkedElements(this.#urls);
-      setURLs(this.#urls);
+      await this.#urlStore.setURLs(this.#urls);
     }
 
-    if (this.#validURLs !== null) {
-      setValidURLs(this.#validURLs);
+    if (this.#validURLs !== undefined) {
+      await this.#urlStore.setValidURLs(this.#validURLs);
     }
   }
 
@@ -191,13 +195,11 @@ export class Crawler {
 
     this.#setIsProcessing(true);
 
-    this.#validateURLs().catch(console.warn).finally(() => {
-      try {
-        this.#updateStores();
-      } finally {
-        this.#setIsProcessing(false);
-      }
-    }).catch(console.warn);
+    (async () => {
+      await this.#initializerPromise;
+      await this.#validateURLs().catch(console.warn);
+      await this.#updateStores();
+    })().catch(console.warn).finally(() => this.#setIsProcessing(false));
   }
 
   terminateProcess(): void {

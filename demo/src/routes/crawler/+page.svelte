@@ -16,10 +16,12 @@
 <button type="button" disabled={!$isStartable} on:click={() => start()}
   >Start</button
 >
-<button type="button" disabled={!$isTerimnatable} on:click={() => stop()}>Stop</button>
+<button type="button" disabled={!$isTerimnatable} on:click={() => stop()}
+  >Stop</button
+>
 
 <div>
-  {#if $validURLs !== null}
+  {#if $validURLs !== undefined}
     {#each $validURLs as url}
       <div><span>{url}</span></div>
     {/each}
