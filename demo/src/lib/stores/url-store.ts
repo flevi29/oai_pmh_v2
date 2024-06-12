@@ -37,9 +37,6 @@ export class URLStore {
   async connectToDatabase(): Promise<void> {
     const openRequest = indexedDB.open(DB_NAME, VERSION);
     this.#db = await new Promise<IDBDatabase>((resolve, reject) => {
-      // https://developer.mozilla.org/en-US/docs/Web/API/IDBRequest#events
-      // https://developer.mozilla.org/en-US/docs/Web/API/IDBOpenDBRequest#events
-      // if we open a database with a higher version than VERSION, this should trigger
       openRequest.onerror = () => reject(openRequest.error);
       openRequest.onsuccess = () => resolve(openRequest.result);
       openRequest.onblocked = (event) => {
@@ -75,8 +72,6 @@ export class URLStore {
       openRequest.onupgradeneeded = null;
     });
 
-    // https://developer.mozilla.org/en-US/docs/Web/API/IDBDatabase#events
-    // this is unexpected, doesn't fire when we manually close connection
     this.#db.onclose = (event) => {
       this.closeDatabase();
       console.error(
@@ -209,17 +204,22 @@ export class URLStore {
     const { store, transaction, transactionPromise } = this
       .#getTransactionAndStore();
 
-    await (urls.length === 0
-      ? this.#getRequestResult(
-        transaction,
-        transactionPromise,
-        store.delete(URLS_KEY),
-      )
-      : this.#getRequestResult(
-        transaction,
-        transactionPromise,
-        store.put(urls, URLS_KEY),
-      ));
+    await this.#getRequestResult(
+      transaction,
+      transactionPromise,
+      store.put(urls, URLS_KEY),
+    );
+  }
+
+  async clearURLs() {
+    const { store, transaction, transactionPromise } = this
+      .#getTransactionAndStore();
+
+    await this.#getRequestResult(
+      transaction,
+      transactionPromise,
+      store.delete(URLS_KEY),
+    );
   }
 
   async getValidURLs(): Promise<string[] | undefined> {
@@ -237,16 +237,21 @@ export class URLStore {
     const { store, transaction, transactionPromise } = this
       .#getTransactionAndStore();
 
-    await (urls.length === 0
-      ? this.#getRequestResult(
-        transaction,
-        transactionPromise,
-        store.delete(VALID_URLS_KEY),
-      )
-      : this.#getRequestResult(
-        transaction,
-        transactionPromise,
-        store.put(urls, VALID_URLS_KEY),
-      ));
+    await this.#getRequestResult(
+      transaction,
+      transactionPromise,
+      store.put(urls, VALID_URLS_KEY),
+    );
+  }
+
+  async clearValidURLs() {
+    const { store, transaction, transactionPromise } = this
+      .#getTransactionAndStore();
+
+    await this.#getRequestResult(
+      transaction,
+      transactionPromise,
+      store.delete(VALID_URLS_KEY),
+    );
   }
 }

@@ -22,6 +22,7 @@ export class Crawler {
 
   #isProcessing = false;
   readonly #writableIsProcessing = writable(this.#isProcessing);
+  readonly isProcessing = readonly(this.#writableIsProcessing);
   #setIsProcessing(value: boolean): void {
     this.#isProcessing = value;
     this.#writableIsProcessing.set(value);
@@ -36,6 +37,7 @@ export class Crawler {
 
   #isToBeTerminated = false;
 
+  // @TODO: Could also check if there are urls here
   isStartable = derived(this.#writableIsProcessing, ($isProcessing) => {
     return !$isProcessing;
   });
@@ -48,8 +50,7 @@ export class Crawler {
   });
 
   readonly #parser = new XMLParser(DOMParser);
-  // @TODO: Make it so that we don't rely on store in case for some reason browser blocks it
-  readonly #urlStore = new URLStore();
+  #urlStore: URLStore | null = null;
   #urls?: string[];
   #validURLs?: string[];
   readonly #writableValidURLs = writable<string[] | undefined>(this.#validURLs);
@@ -60,12 +61,20 @@ export class Crawler {
 
   readonly #semaphore = new Semaphore(WEIGHT);
 
-  readonly #initializerPromise = (async () => {
-    await this.#urlStore.connectToDatabase();
-    this.#urls = await this.#urlStore.getURLs();
-    this.#validURLs = await this.#urlStore.getValidURLs();
+  readonly #urlStoreInitPromise = (async () => {
+    const urlStore = new URLStore();
+
+    await urlStore.connectToDatabase();
+
+    this.#urls = await urlStore.getURLs();
+    this.#validURLs = await urlStore.getValidURLs();
     this.#writableValidURLs.set(this.#validURLs);
+    this.#urlStore = urlStore;
   })().catch(console.warn);
+
+  disconnectURLStore() {
+    this.#urlStore?.closeDatabase();
+  }
 
   #addValidURL(url: string): void {
     (this.#validURLs ??= []).push(url);
@@ -115,7 +124,6 @@ export class Crawler {
         const releaseLock = await this.#semaphore.acquireLock();
 
         (async () => {
-          // @TODO: Some URLs seem to return a HTML page, but maybe we can send some headers or something that fixes it
           const response = await fetch(`${url}?verb=Identify`, {
             signal:
               // @TODO: coming in typescript 5.5
@@ -180,11 +188,11 @@ export class Crawler {
   async #updateStores(): Promise<void> {
     if (this.#urls !== undefined) {
       this.#indexes.removeMarkedElements(this.#urls);
-      await this.#urlStore.setURLs(this.#urls);
+      await this.#urlStore?.setURLs(this.#urls);
     }
 
     if (this.#validURLs !== undefined) {
-      await this.#urlStore.setValidURLs(this.#validURLs);
+      await this.#urlStore?.setValidURLs(this.#validURLs);
     }
   }
 
@@ -196,7 +204,7 @@ export class Crawler {
     this.#setIsProcessing(true);
 
     (async () => {
-      await this.#initializerPromise;
+      await this.#urlStoreInitPromise;
       await this.#validateURLs().catch(console.warn);
       await this.#updateStores();
     })().catch(console.warn).finally(() => this.#setIsProcessing(false));
@@ -227,5 +235,18 @@ export class Crawler {
       unsubsribe();
       this.#setIsTerminating(false);
     }).catch(console.warn);
+  }
+
+  clearURLs() {
+    (async () => {
+      if (this.#urlStore !== null) {
+        await this.#urlStore.clearURLs();
+        await this.#urlStore.clearValidURLs();
+      }
+
+      this.#urls = undefined;
+      this.#validURLs = undefined;
+      this.#writableValidURLs.set(undefined);
+    })().catch(console.error);
   }
 }
