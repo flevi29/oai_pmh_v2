@@ -4,7 +4,7 @@ import { XMLParser } from "$rootSrc/parser/xml_parser";
 import { InnerValidationError } from "$rootSrc/error/validation_error";
 import { Semaphore } from "./semaphore";
 import { parseBaseURLs } from "./base-urls";
-import { URLStore } from "$lib/stores/url-store";
+import { URLStore, type ValidURLObject } from "$lib/stores/url-store";
 import {
   CRAWLER_ABORT_SYMBOL,
   CrawlerAbortController,
@@ -37,12 +37,17 @@ export class Crawler {
 
   #isToBeTerminated = false;
 
-  // @TODO: Could also check if there are urls here
-  isStartable = derived(this.#writableIsProcessing, ($isProcessing) => {
-    return !$isProcessing;
-  });
+  readonly #writableURLsCount = writable<number | null>(null);
+  readonly urlsCount = readonly(this.#writableURLsCount);
 
-  isTerimnatable = derived([
+  readonly isStartable = derived(
+    [this.#writableIsProcessing, this.#writableURLsCount],
+    ([$isProcessing, $urlsCount]) => {
+      return !$isProcessing && $urlsCount !== 0;
+    },
+  );
+
+  readonly isTerimnatable = derived([
     this.#writableIsProcessing,
     this.#writableIsTerminating,
   ], ([$isProcessing, $isTerminating]) => {
@@ -52,9 +57,11 @@ export class Crawler {
   readonly #parser = new XMLParser(DOMParser);
   #urlStore: URLStore | null = null;
   #urls?: string[];
-  #validURLs?: string[];
-  readonly #writableValidURLs = writable<string[] | undefined>(this.#validURLs);
-  readonly validURLs = readonly(this.#writableValidURLs);
+  #validURLObjects?: ValidURLObject[];
+  readonly #writableValidURLObjects = writable<ValidURLObject[] | undefined>(
+    this.#validURLObjects,
+  );
+  readonly validURLObjects = readonly(this.#writableValidURLObjects);
 
   readonly #indexes = new Indexes();
   #index?: number;
@@ -67,8 +74,12 @@ export class Crawler {
     await urlStore.connectToDatabase();
 
     this.#urls = await urlStore.getURLs();
-    this.#validURLs = await urlStore.getValidURLs();
-    this.#writableValidURLs.set(this.#validURLs);
+    if (this.#urls !== undefined) {
+      this.#writableURLsCount.set(this.#urls.length);
+    }
+
+    this.#validURLObjects = await urlStore.getValidURLs();
+    this.#writableValidURLObjects.set(this.#validURLObjects);
     this.#urlStore = urlStore;
   })().catch(console.warn);
 
@@ -76,9 +87,9 @@ export class Crawler {
     this.#urlStore?.closeDatabase();
   }
 
-  #addValidURL(url: string): void {
-    (this.#validURLs ??= []).push(url);
-    this.#writableValidURLs.set(this.#validURLs);
+  #addValidURLObject(value: ValidURLObject): void {
+    (this.#validURLObjects ??= []).push(value);
+    this.#writableValidURLObjects.set(this.#validURLObjects);
   }
 
   async #fetchURLs(): Promise<string[]> {
@@ -100,7 +111,10 @@ export class Crawler {
     const xml = await response.text(),
       { childNodes } = this.#parser.parse(xml);
 
-    return (this.#urls = parseBaseURLs(childNodes));
+    this.#urls = parseBaseURLs(childNodes);
+    this.#writableURLsCount.set(this.#urls.length);
+
+    return this.#urls;
   }
 
   async #validateURLs(): Promise<void> {
@@ -151,8 +165,8 @@ export class Crawler {
               { childNodes } = this.#parser.parse(xml);
 
             try {
-              // @TODO: Maybe do something with this as well
-              parseIdentifyResponse(childNodes);
+              const { repositoryName } = parseIdentifyResponse(childNodes);
+              this.#addValidURLObject({ name: repositoryName, url });
             } catch (error: unknown) {
               if (!(error instanceof InnerValidationError)) {
                 throw error;
@@ -162,10 +176,7 @@ export class Crawler {
               console.warn(error);
               console.log(url);
               console.log(xml);
-              break responseParse;
             }
-
-            this.#addValidURL(url);
           }
 
           this.#indexes.addIndex(index);
@@ -191,8 +202,8 @@ export class Crawler {
       await this.#urlStore?.setURLs(this.#urls);
     }
 
-    if (this.#validURLs !== undefined) {
-      await this.#urlStore?.setValidURLs(this.#validURLs);
+    if (this.#validURLObjects !== undefined) {
+      await this.#urlStore?.setValidURLs(this.#validURLObjects);
     }
   }
 
@@ -245,8 +256,9 @@ export class Crawler {
       }
 
       this.#urls = undefined;
-      this.#validURLs = undefined;
-      this.#writableValidURLs.set(undefined);
+      this.#writableURLsCount.set(null);
+      this.#validURLObjects = undefined;
+      this.#writableValidURLObjects.set(undefined);
     })().catch(console.error);
   }
 }

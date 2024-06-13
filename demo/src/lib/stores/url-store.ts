@@ -1,3 +1,5 @@
+type ValidURLObject = { name: string; url: string };
+
 const DB_NAME = "URLS",
   VERSION = 1,
   URLS_STORE = "urlsStore",
@@ -12,7 +14,7 @@ function tryJSONStringify(value: unknown): string | null {
   }
 }
 
-export class URLStore {
+class URLStore {
   #db: IDBDatabase | null = null;
 
   closeDatabase() {
@@ -222,18 +224,18 @@ export class URLStore {
     );
   }
 
-  async getValidURLs(): Promise<string[] | undefined> {
+  async getValidURLs(): Promise<ValidURLObject[] | undefined> {
     const { store, transaction, transactionPromise } = this
       .#getTransactionAndStore();
 
-    return await this.#getRequestResult<string[] | undefined>(
+    return await this.#getRequestResult<ValidURLObject[] | undefined>(
       transaction,
       transactionPromise,
       store.get(VALID_URLS_KEY),
     );
   }
 
-  async setValidURLs(urls: string[]): Promise<void> {
+  async setValidURLs(urls: ValidURLObject[]): Promise<void> {
     const { store, transaction, transactionPromise } = this
       .#getTransactionAndStore();
 
@@ -255,3 +257,5 @@ export class URLStore {
     );
   }
 }
+
+export { URLStore, type ValidURLObject };
