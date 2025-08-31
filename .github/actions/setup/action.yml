@@ -6,4 +6,5 @@ runs:
       with:
         cache: true
     - name: Install dependencies
+      shell: bash
       run: deno install --frozen --allow-scripts=npm:@tailwindcss/oxide
