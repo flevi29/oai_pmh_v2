@@ -12,6 +12,7 @@ jobs:
       - uses: denoland/setup-deno@v2
         with:
           cache: true
+      - run: deno install --frozen
       - run: |
           deno task lint
           deno task --cwd=app lint
