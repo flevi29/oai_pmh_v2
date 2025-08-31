@@ -1,0 +1,10 @@
+name: "Set up repository, Deno and dependencies"
+runs:
+  using: "composite"
+  steps:
+    - uses: actions/checkout@v4
+    - uses: denoland/setup-deno@v2
+      with:
+        cache: true
+    - name: Install dependencies
+      run: deno install --frozen --allow-scripts=npm:@tailwindcss/oxide

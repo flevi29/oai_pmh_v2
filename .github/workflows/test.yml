@@ -5,14 +5,11 @@ on:
   push:
 
 jobs:
-  lint_and_type_check:
+  lint_and_type_check_and_test:
+    name: Lint, type check and test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: denoland/setup-deno@v2
-        with:
-          cache: true
-      - run: deno install --frozen --allow-scripts=npm:@tailwindcss/oxide
+      - uses: ./.github/actions/setup
       - name: Lint
         run: |
           deno task lint
@@ -22,3 +19,6 @@ jobs:
         run: |
           deno task --cwd=app check
           deno task --cwd=lib check
+      - name: Test
+        # TODO
+        run: echo TODO
