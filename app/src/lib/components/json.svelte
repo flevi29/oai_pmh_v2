@@ -48,7 +48,7 @@
           class="absolute inset-0 mx-auto size-28 text-gray-100/70"
         />
 
-        <div class="relative size-max text-lg italic text-gray-400">
+        <div class="relative size-max text-lg text-gray-400 italic">
           <span>No results to show</span>
         </div>
       </div>

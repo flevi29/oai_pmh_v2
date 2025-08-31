@@ -55,8 +55,8 @@
         </button>
       {:else}
         <div
-          class="flex min-h-[38px] min-w-[38px] select-none items-center justify-center rounded-lg p-2 text-sm
-        text-gray-400 hover:bg-gray-100 focus:outline-none"
+          class="flex min-h-[38px] min-w-[38px] items-center justify-center rounded-lg p-2 text-sm text-gray-400
+        select-none hover:bg-gray-100 focus:outline-none"
         >
           <span class="text-xs">•••</span>
         </div>

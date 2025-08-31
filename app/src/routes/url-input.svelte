@@ -18,9 +18,9 @@
       <summary
         class="border-light-silver-lighter active:bg-bright-gray-huh hover:bg-anti-flash-white-huh
         bg-ghost-white text-charleston-green shadow-resting-small shadow-dark-gunmetal/5 outline-true-blue transition-button ease-something-input inline-flex h-8
-        min-w-max cursor-pointer select-none items-center gap-1 break-words rounded-l-md
-        border px-3 text-sm font-medium
-        duration-75 focus-visible:outline-2 active:transition-none"
+        min-w-max cursor-pointer items-center gap-1 rounded-l-md border px-3
+        text-sm font-medium break-words duration-75
+        select-none focus-visible:outline-2 active:transition-none"
       >
         <span>Select URL</span>
 
@@ -33,15 +33,15 @@
     <div class="text-dim-gray relative w-full">
       <DebouncedTextInput
         class="border-light-silver bg-ghost-white shadow-inset-resting-small shadow-dark-gunmetal/5 transition-button ease-something-input focus:shadow-input-focus focus-visible:border-true-blue focus-visible:shadow-true-blue
-        block w-full break-words rounded-r-md border py-[5px]
-        pl-8 pr-3 align-middle text-sm duration-75
+        block w-full rounded-r-md border py-[5px] pr-3
+        pl-8 align-middle text-sm break-words duration-75
         focus:bg-white focus-visible:outline-none"
         placeholder="OAI-PMH URL here..."
         value={oai.url}
         onValueChanged={oai.setURL}
       />
 
-      <LinkSvg class="pointer-events-none absolute left-2 top-[9px] size-4" />
+      <LinkSvg class="pointer-events-none absolute top-[9px] left-2 size-4" />
     </div>
 
     <!-- <div class="whitespace-nowrap">

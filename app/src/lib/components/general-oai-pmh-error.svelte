@@ -10,7 +10,7 @@
   class="relative rounded-lg border border-red-500 bg-red-100 p-4 text-red-800"
 >
   <div class="absolute inset-0 size-full overflow-hidden text-red-200/50">
-    <ExclamationCircle class="relative -left-7 -top-7 size-56" />
+    <ExclamationCircle class="relative -top-7 -left-7 size-56" />
   </div>
   <div class="relative">
     {#if error instanceof Error}

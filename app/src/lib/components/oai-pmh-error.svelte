@@ -10,7 +10,7 @@
   class="relative rounded-lg border border-amber-500 bg-amber-100 p-4 text-amber-800"
 >
   <div class="absolute inset-0 size-full overflow-hidden text-amber-200/40">
-    <ExclamationTriangle class="relative -left-7 -top-8 size-48" />
+    <ExclamationTriangle class="relative -top-8 -left-7 size-48" />
   </div>
 
   <div class="relative">

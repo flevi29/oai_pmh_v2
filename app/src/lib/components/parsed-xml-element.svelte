@@ -65,7 +65,7 @@
   <div>
     <button
       type="button"
-      class="group flex w-max select-text items-center"
+      class="group flex w-max items-center select-text"
       class:cursor-default={!isValueDefined}
       onclick={() => {
         isCollapsed = !isCollapsed;

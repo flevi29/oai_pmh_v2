@@ -12,11 +12,13 @@ jobs:
       - uses: denoland/setup-deno@v2
         with:
           cache: true
-      - run: deno install --frozen
-      - run: |
+      - run: deno install --frozen --allow-scripts=npm:@tailwindcss/oxide
+      - name: Lint
+        run: |
           deno task lint
           deno task --cwd=app lint
           deno task --cwd=lib lint
-      - run: |
+      - name: Type check
+        run: |
           deno task --cwd=app check
           deno task --cwd=lib check

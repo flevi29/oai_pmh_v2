@@ -97,7 +97,7 @@
                 }}
               />
               <span
-                class="grow select-none pl-3 font-mono font-semibold text-gray-800"
+                class="grow pl-3 font-mono font-semibold text-gray-800 select-none"
                 >{key}</span
               >
             </label>
