@@ -1,0 +1,40 @@
+{
+  "name": "oai_pmh_v2",
+  "version": "0.9.0",
+  "author": "Fodor Levente",
+  "license": "MIT",
+  "description": "OAI-PMH JS client.",
+  "keywords": [
+    "OAI-PMH",
+    "oaipmh",
+    "oai",
+    "metadata",
+    "harvest",
+    "protocol"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/flevi29/oai_pmh_v2.git"
+  },
+  "bugs": {
+    "url": "https://github.com/flevi29/oai_pmh_v2/issues"
+  },
+  "homepage": "https://github.com/flevi29/oai_pmh_v2#readme",
+  "type": "module",
+  "scripts": {
+    "build": "vite build && tsc -p tsconfig.build.json",
+    "check": "tsc --noEmit",
+    "format": "prettier --write .",
+    "lint": "prettier --check ."
+  },
+  "publishExports": {
+    ".": {
+      "types": "./types/mod.d.ts",
+      "import": "./esm/mod.js",
+      "require": "./cjs/mod.cjs"
+    }
+  },
+  "exports": {
+    "./*": "./src/*.ts"
+  }
+}
