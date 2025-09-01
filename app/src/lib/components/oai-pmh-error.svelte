@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { OAIPMHResponseErrorCause } from "oai_pmh_v2/mod";
+  import type { OAIPMHResponseErrorCause } from "oai-pmh-2-js/mod";
   import ParsedXMLAttributesComponent from "./parsed-xml-attributes.svelte";
   import ExclamationTriangle from "./svgs/exclamation-triangle.svelte";
 

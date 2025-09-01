@@ -1,4 +1,4 @@
-name: "Set Deno and dependencies"
+name: "Setup Deno and dependencies"
 runs:
   using: "composite"
   steps:

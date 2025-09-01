@@ -1,4 +1,4 @@
-import type { ListOptions, OAIPMHRecord } from "oai_pmh_v2/mod";
+import type { ListOptions, OAIPMHRecord } from "oai-pmh-2-js/mod";
 import { omitAndPick } from "../../omit-and-pick";
 import { getListResultStore } from "../list-result.svelte";
 import { getListOptionsStores } from "../list-options.svelte";

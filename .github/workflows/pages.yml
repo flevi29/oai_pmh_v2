@@ -1,0 +1,40 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+
+jobs:
+  build:
+    name: Build and upload
+    runs-on: ubuntu-latest
+    steps:
+      - id: pages_cfg
+        uses: actions/configure-pages@v5
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - name: Build
+        env:
+          PAGES_BASE_PATH: ${{steps.pages_cfg.outputs.base_path}}
+        run: |
+          deno task --cwd=app prepare
+          deno task --cwd=app build
+      - name: Upload artifact
+        id: deployment
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: ./app/build/
+
+  deploy:
+    name: Deploy to GitHub pages
+    permissions:
+      pages: write
+      id-token: write
+    runs-on: ubuntu-latest
+    needs: build
+    environment:
+      name: github-pages
+      url: ${{steps.deployment.outputs.page_url}}
+    steps:
+      - name: Deploy artifact
+        id: deployment
+        uses: actions/deploy-pages@v4

@@ -11,12 +11,9 @@ const readmeUrl = new URL("README.md", workspaceUrl);
 const readmeUrlTo = new URL("README.md", distUrl);
 
 const { publishExports, exports: _, ...restOfPkg } = pkg;
-const pkgWithExports = { exports: publishExports, ...restOfPkg };
+const pkgWithProperExports = { exports: publishExports, ...restOfPkg };
 
-Deno.writeTextFileSync(pkgUrl, JSON.stringify(pkgWithExports, null, 2));
+Deno.writeTextFileSync(pkgUrl, JSON.stringify(pkgWithProperExports, null, 2));
 
 Deno.copyFileSync(licenseUrl, licenseUrlTo);
 Deno.copyFileSync(readmeUrl, readmeUrlTo);
-
-// TODO: Copy license and readme
-// await Deno.copyFile();

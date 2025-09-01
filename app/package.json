@@ -11,7 +11,7 @@
     "check-scripts": "deno check scripts/**/*.ts"
   },
   "dependencies": {
-    "oai_pmh_v2": "workspace:*"
+    "oai-pmh-2-js": "workspace:*"
   },
   "devDependencies": {
     "@sveltejs/adapter-static": "^3.0.9",

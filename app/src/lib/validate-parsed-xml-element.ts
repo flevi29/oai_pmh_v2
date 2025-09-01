@@ -1,4 +1,4 @@
-import type { ParsedXMLElement } from "oai_pmh_v2/model/parser/xml";
+import type { ParsedXMLElement } from "oai-pmh-2-js/model/parser/xml";
 
 export function validateParsedXMLElement(v: unknown): ParsedXMLElement | null {
   if (v === null || typeof v !== "object") {

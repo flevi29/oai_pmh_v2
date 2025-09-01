@@ -1,4 +1,4 @@
-import { OAIPMHResponseError } from "oai_pmh_v2/mod";
+import { OAIPMHResponseError } from "oai-pmh-2-js/mod";
 
 export { OAIPMHResponseError };
 export const OAI_PMH_RESULT_TYPE = Object.freeze({

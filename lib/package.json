@@ -1,9 +1,9 @@
 {
-  "name": "oai_pmh_v2",
+  "name": "oai-pmh-2-js",
   "version": "0.9.0",
   "author": "Fodor Levente",
   "license": "MIT",
-  "description": "OAI-PMH JS client.",
+  "description": "OAI-PMH ECMAScript (JS) client.",
   "keywords": [
     "OAI-PMH",
     "oaipmh",
@@ -14,12 +14,12 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/flevi29/oai_pmh_v2.git"
+    "url": "git+https://github.com/flevi29/oai-pmh-2-js.git"
   },
   "bugs": {
-    "url": "https://github.com/flevi29/oai_pmh_v2/issues"
+    "url": "https://github.com/flevi29/oai-pmh-2-js/issues"
   },
-  "homepage": "https://github.com/flevi29/oai_pmh_v2#readme",
+  "homepage": "https://github.com/flevi29/oai-pmh-2-js#readme",
   "type": "module",
   "scripts": {
     "build": "vite build && tsc -p tsconfig.build.json",

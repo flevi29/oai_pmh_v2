@@ -9,7 +9,7 @@ API client package/module for Node.js and Deno.
 ## Installing (Node.js)
 
 ```sh
-npm i oai_pmh_v2
+npm i oai-pmh-2-js
 ```
 
 <!--deno-fmt-ignore-start-->
@@ -36,8 +36,8 @@ npm i oai_pmh_v2
 <!--deno-fmt-ignore-end-->
 
 ```typescript
-// `... from "npm:oai_pmh_v2"` for Deno
-import { OAIPMH, STATUS } from "oai_pmh_v2";
+// `... from "npm:oai-pmh-2-js"` for Deno
+import { OAIPMH, STATUS } from "oai-pmh-2-js";
 
 // you can find OAI-PMH providers here (although a lot of them might not work):
 // https://www.openarchives.org/Register/BrowseSites
@@ -103,8 +103,8 @@ type ParsedXML = Record<string, ParsedXMLRecordValue[]>;
 ```
 
 Find examples for all methods in
-[examples directory](https://github.com/flevi29/oai_pmh_v2/tree/main/examples).
+[examples directory](https://github.com/flevi29/oai-pmh-2-js/tree/main/examples).
 Documentation via types.
 
-[npm-svg]: https://img.shields.io/npm/v/oai_pmh_v2.svg?style=flat-square
-[npm-url]: https://npmjs.org/package/oai_pmh_v2
+[npm-svg]: https://img.shields.io/npm/v/oai-pmh-2-js.svg?style=flat-square
+[npm-url]: https://npmjs.org/package/oai-pmh-2-js

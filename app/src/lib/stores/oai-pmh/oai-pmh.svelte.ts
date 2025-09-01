@@ -1,4 +1,4 @@
-import { OAIPMH } from "oai_pmh_v2/mod";
+import { OAIPMH } from "oai-pmh-2-js/mod";
 
 const LAST_OAI_PMH_URL_KEY = "lastOaiPmhUrl";
 

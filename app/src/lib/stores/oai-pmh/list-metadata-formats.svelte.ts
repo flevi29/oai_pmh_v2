@@ -1,4 +1,4 @@
-import type { OAIPMHMetadataFormat } from "oai_pmh_v2/mod";
+import type { OAIPMHMetadataFormat } from "oai-pmh-2-js/mod";
 import { oai } from "./oai-pmh.svelte";
 import { omitAndPick } from "../../omit-and-pick";
 import { getResultStore } from "../result.svelte";

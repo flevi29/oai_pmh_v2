@@ -11,9 +11,6 @@ import type {
 } from "./model/oai-pmh.js";
 
 // TODO: https://www.openarchives.org/OAI/openarchivesprotocol.html#StatusCodes
-//       status code and compression (just have to set Accept-Encoding, Fetch handles the rest theoretically)
-//                                   (When a request includes an Accept-Encoding header the list of encodings
-//                                    must include the identity (no compression) encoding (with a non-zero qvalue).)
 
 /** Append a set of key value pairs to a {@link URLSearchParams} object. */
 function appendRecordToURLSearchParams(

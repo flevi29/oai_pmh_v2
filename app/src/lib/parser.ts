@@ -2,8 +2,8 @@ import {
   NON_WHITESPACE,
   parseElementNode,
   parseTextNode,
-} from "oai_pmh_v2/parser/xml_parser";
-import type { ParsedXMLElement } from "oai_pmh_v2/model/parser/xml";
+} from "oai-pmh-2-js/parser/xml_parser";
+import type { ParsedXMLElement } from "oai-pmh-2-js/model/parser/xml";
 
 const SOME_TYPE = Object.freeze({
   TEXT: 0,
