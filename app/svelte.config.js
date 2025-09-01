@@ -15,7 +15,12 @@ const config = {
   preprocess: vitePreprocess(),
 
   kit: {
-    adapter: adapter({ fallback: "404.html", precompress: true, strict: true }),
+    adapter: adapter({
+      // https://svelte.dev/docs/kit/adapter-static#Options-fallback
+      fallback: "404.html",
+      precompress: true,
+      strict: true,
+    }),
     paths,
   },
 

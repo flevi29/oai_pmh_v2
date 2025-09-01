@@ -13,13 +13,13 @@
     </div>
 
     <NavsComponent
-      navs={[
-        ["Identify", "identify"],
-        ["ListMetadataFormats", "list-metadata-formats"],
-        ["ListIdentifiers", "list-identifiers"],
-        ["ListRecords", "list-records"],
-        ["ListSets", "list-sets"],
-        ["GetRecord", "get-record"],
+      navigationObjects={[
+        ["Identify", "/identify"],
+        ["ListMetadataFormats", "/list-metadata-formats"],
+        ["ListIdentifiers", "/list-identifiers"],
+        ["ListRecords", "/list-records"],
+        ["ListSets", "/list-sets"],
+        ["GetRecord", "/get-record"],
       ]}
     />
 
