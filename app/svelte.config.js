@@ -9,20 +9,14 @@ import adapter from "@sveltejs/adapter-static";
 const paths =
   env.PAGES_BASE_PATH !== undefined ? { base: env.PAGES_BASE_PATH } : undefined;
 
-console.log(paths);
-
 /** @type {import('@sveltejs/kit').Config} */
 const config = {
   // https://svelte.dev/docs/kit/integrations
   preprocess: vitePreprocess(),
 
   kit: {
-    adapter: adapter({
-      fallback: "404.html",
-      precompress: true,
-      strict: true,
-      paths,
-    }),
+    adapter: adapter({ fallback: "404.html", precompress: true, strict: true }),
+    paths,
   },
 
   compilerOptions: { runes: true },
